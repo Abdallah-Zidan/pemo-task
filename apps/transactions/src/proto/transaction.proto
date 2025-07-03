@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package transaction;
+
+service TransactionService {
+  rpc ProcessTransaction(ProcessTransactionRequest) returns (ProcessTransactionResponse);
+  rpc GetTransactions(GetTransactionsRequest) returns (GetTransactionsResponse);
+}
+
+message ProcessTransactionRequest {
+}
+
+message ProcessTransactionResponse {
+}
+
+message GetTransactionsRequest {
+}
+
+message GetTransactionsResponse {
+}
