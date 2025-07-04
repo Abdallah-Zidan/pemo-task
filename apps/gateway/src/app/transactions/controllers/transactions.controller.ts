@@ -10,7 +10,6 @@ export class TransactionsController {
 
   @Post('webhook/:processorId')
   handleWebhook(@Param('processorId') processorId: string, @Body() body: unknown) {
-    // TODO: Implement webhook logic
     return this.transactionsProcessingService.processTransaction(processorId, body);
   }
 
