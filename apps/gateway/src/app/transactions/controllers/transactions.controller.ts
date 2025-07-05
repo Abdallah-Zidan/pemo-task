@@ -1,5 +1,6 @@
-import { Controller, Post, Param, Body, Get } from '@nestjs/common';
+import { Controller, Post, Param, Body, Get, Headers } from '@nestjs/common';
 import { TransactionsProcessingService, TransactionsQueryService } from '../services';
+import { RequestHeaders } from '@pemo-task/shared-types';
 
 @Controller()
 export class TransactionsController {
@@ -9,8 +10,12 @@ export class TransactionsController {
   ) {}
 
   @Post('webhook/:processorId')
-  handleWebhook(@Param('processorId') processorId: string, @Body() body: unknown) {
-    return this.transactionsProcessingService.processTransaction(processorId, body);
+  handleWebhook(
+    @Param('processorId') processorId: string,
+    @Body() body: unknown,
+    @Headers() headers: RequestHeaders,
+  ) {
+    return this.transactionsProcessingService.processTransaction(processorId, body, headers);
   }
 
   @Get('transactions')

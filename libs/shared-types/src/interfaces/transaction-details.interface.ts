@@ -1,13 +1,14 @@
 import { TransactionStatus, TransactionType } from '../enums';
 
-export interface ITransactionDetails {
+export interface ITransactionDetails<T = unknown> {
   processorTransactionId: string;
   parentTransactionId?: string;
+  processorId: string;
   type: TransactionType;
   status: TransactionStatus;
   amount: number;
   currency: string;
   cardIdentifier: string;
   userId: string;
-  metadata: Record<string, unknown>;
+  metadata: T;
 }

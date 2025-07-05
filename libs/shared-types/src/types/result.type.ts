@@ -8,16 +8,13 @@ export type Result<T, E> =
       error: E;
     };
 
-export function success<T>(data: T): Result<T, never> {
-  return {
+export const Result = {
+  success: <T>(data: T): Result<T, never> => ({
     success: true,
     data,
-  };
-}
-
-export function error<E>(error: E): Result<never, E> {
-  return {
+  }),
+  error: <E>(error: E): Result<never, E> => ({
     success: false,
     error,
-  };
-}
+  }),
+};

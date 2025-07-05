@@ -1,0 +1,9 @@
+{
+  "name": "processor-two-adapter",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "processor-two-adapter/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project processor-two-adapter --web",
+  "targets": {}
+}

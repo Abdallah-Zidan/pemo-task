@@ -1,11 +1,11 @@
-import { ITransactionDetails, Result } from '@pemo-task/shared-types';
+import { ITransactionDetails, RequestHeaders, Result } from '@pemo-task/shared-types';
 
-export interface IProcessorAdapter {
-  validateAndParseTransaction(
-    data: unknown,
-  ): Promise<Result<ITransactionDetails, string[]>> | Result<ITransactionDetails, string[]>;
-
+type ParseResult = Result<ITransactionDetails, string[]>;
+type AuthorizeResult = Result<unknown, string>;
+export interface IProcessorAdapter<T = unknown> {
+  validateAndParseTransaction(data: unknown): Promise<ParseResult> | ParseResult;
   authorizeTransaction(
-    transaction: unknown,
-  ): Promise<Result<unknown, string>> | Result<unknown, string>;
+    data: T,
+    headers: RequestHeaders,
+  ): Promise<AuthorizeResult> | AuthorizeResult;
 }

@@ -1,6 +1,7 @@
-export enum TransactionStatus {
-  PENDING = 'PENDING',
-  POSTED = 'POSTED',
-  FAILED = 'FAILED',
-  CANCELLED = 'CANCELLED',
-}
+export const TransactionStatus = {
+  APPROVED: 'APPROVED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type TransactionStatus = (typeof TransactionStatus)[keyof typeof TransactionStatus];

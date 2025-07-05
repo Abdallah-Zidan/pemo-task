@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { TransactionsController } from './controllers';
 import { TransactionsProcessingService, TransactionsQueryService } from './services';
 import { ProcessorAdapterManagerModule } from '@pemo-task/process-adapter-manager';
-import { TestProcessorAdapterModule } from '../test-processor-adapter/test-processor-adapter.module';
+import { ProcessorOneAdapterModule } from '../processor-one-adapter/processor-one-adapter.module';
 
 @Module({
-  imports: [ProcessorAdapterManagerModule, TestProcessorAdapterModule],
+  imports: [ProcessorAdapterManagerModule, ProcessorOneAdapterModule],
   controllers: [TransactionsController],
   providers: [TransactionsProcessingService, TransactionsQueryService],
 })
