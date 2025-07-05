@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TransactionsModule } from './transactions/transactions.module';
+import { GatewayModule } from './gateway/gateway.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -8,7 +8,7 @@ import { ConfigModule } from '@nestjs/config';
       isGlobal: true,
       envFilePath: ['../.env', '.env'],
     }),
-    TransactionsModule,
+    GatewayModule,
   ],
 })
 export class AppModule {}

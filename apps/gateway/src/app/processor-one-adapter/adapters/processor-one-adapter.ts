@@ -33,7 +33,7 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
       status: this.mapStatusCodeToStatus(validatedData.status_code),
       type: validatedData.message_type,
       userId: validatedData.user_id,
-      cardIdentifier: validatedData.card_id,
+      cardId: validatedData.card_id,
       metadata: validatedData,
       processorTransactionId: validatedData.id,
       processorId: 'processor-one-adapter',

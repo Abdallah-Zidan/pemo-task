@@ -8,7 +8,7 @@ export interface ITransactionDetails<T = unknown> {
   status: TransactionStatus;
   amount: number;
   currency: string;
-  cardIdentifier: string;
+  cardId: string;
   userId: string;
   metadata: T;
 }

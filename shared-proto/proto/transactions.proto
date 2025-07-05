@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package transactions;
+
+service TransactionService {
+  rpc processTransaction(ProcessTransactionRequest) returns (ProcessTransactionResponse);
+}
+
+
+message ProcessTransactionRequest {
+  string processorTransactionId = 1;
+  string parentTransactionId = 2;
+  string processorId = 3;
+  string type = 4;
+  string status = 5;
+  double amount = 6;
+  string currency = 7;
+  string cardId = 8;
+  string userId = 9;
+  string metadata = 10; 
+}
+
+message ProcessTransactionResponse {
+  bool success = 1;
+}
+
+
+

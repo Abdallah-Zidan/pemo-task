@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -6,19 +7,28 @@ import {
 } from '@nestjs/common';
 import { ProcessorAdapterManager } from '@pemo-task/process-adapter-manager';
 import { RequestHeaders } from '@pemo-task/shared-types';
+import { TRANSACTIONS_CLIENT_NAME } from '../constants';
+import { ClientGrpc } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
+import { ITransactionsGrpcService } from '@pemo-task/shared-types';
 
 @Injectable()
 export class TransactionsProcessingService {
   private readonly logger = new Logger(TransactionsProcessingService.name);
+  private transactionsGrpcService: ITransactionsGrpcService;
 
-  constructor(private readonly processorAdapterManager: ProcessorAdapterManager) {}
+  constructor(
+    private readonly processorAdapterManager: ProcessorAdapterManager,
+    @Inject(TRANSACTIONS_CLIENT_NAME) private readonly transactionsClient: ClientGrpc,
+  ) {
+    this.transactionsGrpcService =
+      this.transactionsClient.getService<ITransactionsGrpcService>('TransactionService');
+  }
 
   async processTransaction(processorId: string, body: unknown, headers: RequestHeaders) {
     const validatedData = await this.validateAndParseTransaction(processorId, body);
     await this.authorizeTransaction(processorId, body, headers);
-
-    // TODO: Implement transaction processing
-    return { transaction: validatedData };
+    return firstValueFrom(this.transactionsGrpcService.processTransaction(validatedData));
   }
 
   private async validateAndParseTransaction(processorId: string, body: unknown) {
