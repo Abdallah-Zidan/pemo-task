@@ -3,7 +3,9 @@ import { ProcessorOneAdapter } from './processor-one-adapter';
 import { SHA256SignatureVerificationService } from '../services';
 import { TransactionStatus, TransactionType } from '@pemo-task/shared-types';
 import { ClearingRequestData, ProcessorRequestData } from '../schemas';
+import { PROCESSOR_ONE_ADAPTER_ID } from '../constants';
 import { omit } from 'lodash';
+
 describe('ProcessorOneAdapter', () => {
   let adapter: ProcessorOneAdapter;
   let mockSignatureVerificationService: jest.Mocked<SHA256SignatureVerificationService>;
@@ -88,7 +90,7 @@ describe('ProcessorOneAdapter', () => {
       fee_amount: 2.5,
       clearing_id: 'clearing-123',
       settlement_status: 'settled',
-      parent_transaction_id: 'parent-123',
+      parent_transaction_id: 'txn-123',
     };
 
     it('should be defined', () => {
@@ -103,14 +105,16 @@ describe('ProcessorOneAdapter', () => {
         expect(result.data).toEqual({
           amount: 100.5,
           currency: 'USD',
-          status: TransactionStatus.APPROVED,
+          status: TransactionStatus.PENDING,
           type: TransactionType.AUTHORIZATION,
           userId: 'user-123',
           cardId: 'card-123',
           metadata: validAuthorizationData,
           authorizationTransactionId: 'txn-123',
+          clearingTransactionId: undefined,
           transactionCorrelationId: 'txn-123',
-          processorId: 'processor-one-adapter',
+          processorId: PROCESSOR_ONE_ADAPTER_ID,
+          isSuccessful: true,
         });
       }
     });
@@ -123,14 +127,16 @@ describe('ProcessorOneAdapter', () => {
         expect(result.data).toEqual({
           amount: 100.5,
           currency: 'USD',
-          status: TransactionStatus.APPROVED,
+          status: TransactionStatus.SETTLED,
           type: TransactionType.CLEARING,
           userId: 'user-123',
           cardId: 'card-123',
           metadata: validClearingData,
           authorizationTransactionId: 'txn-123',
+          clearingTransactionId: 'txn-123',
           transactionCorrelationId: 'txn-123',
-          processorId: 'processor-one-adapter',
+          processorId: PROCESSOR_ONE_ADAPTER_ID,
+          isSuccessful: true,
         });
       }
     });
@@ -151,45 +157,17 @@ describe('ProcessorOneAdapter', () => {
       }
     });
 
-    it('should map status code 0000 to APPROVED', async () => {
-      const dataWithApprovedStatus = {
-        ...validAuthorizationData,
-        status_code: '0000',
-      };
-
-      const result = await adapter.validateAndParseTransaction(dataWithApprovedStatus);
-
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.status).toBe(TransactionStatus.APPROVED);
-      }
-    });
-
-    it('should map status code 1111 to CANCELLED', async () => {
-      const dataWithPostedStatus = {
+    it('should handle unsuccessful transaction status code', async () => {
+      const unsuccessfulData = {
         ...validAuthorizationData,
         status_code: '1111',
       };
 
-      const result = await adapter.validateAndParseTransaction(dataWithPostedStatus);
+      const result = await adapter.validateAndParseTransaction(unsuccessfulData);
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.status).toBe(TransactionStatus.CANCELLED);
-      }
-    });
-
-    it('should map other status codes to FAILED', async () => {
-      const dataWithFailedStatus = {
-        ...validAuthorizationData,
-        status_code: '9999',
-      };
-
-      const result = await adapter.validateAndParseTransaction(dataWithFailedStatus);
-
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.status).toBe(TransactionStatus.FAILED);
+        expect(result.data.isSuccessful).toBe(false);
       }
     });
   });
