@@ -11,6 +11,7 @@ import {
 
 import { Transaction } from './transaction.model';
 import { randomUUID } from 'node:crypto';
+import { TransactionEventType } from '@pemo-task/shared-types';
 
 @Table({
   tableName: 'transaction_events',
@@ -37,7 +38,7 @@ export class TransactionEvent extends Model {
     type: DataType.STRING(75),
     allowNull: false,
   })
-  eventType!: string;
+  eventType!: TransactionEventType;
 
   @Column({
     type: DataType.JSONB,

@@ -1,6 +1,0 @@
-export const EventType = {
-  AUTHORIZATION_TRANSACTION_PROCESSED: 'AUTHORIZATION_TRANSACTION_PROCESSED',
-  CLEARING_TRANSACTION_PROCESSED: 'CLEARING_TRANSACTION_PROCESSED',
-} as const;
-
-export type EventType = (typeof EventType)[keyof typeof EventType];

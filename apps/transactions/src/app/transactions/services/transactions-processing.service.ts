@@ -4,13 +4,13 @@ import { InjectModel } from '@nestjs/sequelize';
 import {
   isObject,
   ITransactionDetails,
+  TransactionEventType,
   TransactionStatus,
   TransactionType,
 } from '@pemo-task/shared-types';
 import { WhereOptions } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { EventType } from '../enums';
-import { Transaction, TransactionEvent } from '../models';
+import { Transaction, TransactionEvent } from '../../models';
 
 @Injectable()
 export class TransactionService {
@@ -47,7 +47,7 @@ export class TransactionService {
         await this.transactionEventModel.create(
           {
             transactionId: transaction.id,
-            eventType: EventType.AUTHORIZATION_TRANSACTION_PROCESSED,
+            eventType: TransactionEventType.AUTHORIZATION_TRANSACTION_PROCESSED,
             data: {
               status: transaction.status,
               type: TransactionType.AUTHORIZATION,
@@ -132,7 +132,7 @@ export class TransactionService {
         await this.transactionEventModel.create(
           {
             transactionId: pendingTransaction.id,
-            eventType: EventType.CLEARING_TRANSACTION_PROCESSED,
+            eventType: TransactionEventType.CLEARING_TRANSACTION_PROCESSED,
             data: {
               status: data.status,
               type: TransactionType.CLEARING,
