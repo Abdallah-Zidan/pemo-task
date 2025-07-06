@@ -1,5 +1,4 @@
 'use strict';
-const { Op } = require('sequelize');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -31,9 +30,13 @@ module.exports = {
         type: Sequelize.ENUM('PENDING', 'SETTLED'),
         allowNull: false,
       },
-      amount: {
+      auth_amount: {
         type: Sequelize.DECIMAL(19, 4),
         allowNull: false,
+      },
+      clearing_amount: {
+        type: Sequelize.DECIMAL(19, 4),
+        allowNull: true,
       },
       currency: {
         type: Sequelize.STRING(3),
@@ -44,6 +47,18 @@ module.exports = {
         allowNull: false,
       },
       user_id: {
+        type: Sequelize.STRING(255),
+        allowNull: false,
+      },
+      mcc: {
+        type: Sequelize.STRING(255),
+        allowNull: false,
+      },
+      reference_number: {
+        type: Sequelize.STRING(255),
+        allowNull: false,
+      },
+      processor_name: {
         type: Sequelize.STRING(255),
         allowNull: false,
       },
@@ -65,25 +80,10 @@ module.exports = {
     });
 
     await queryInterface.addIndex('transactions', ['processor_id']);
-    await queryInterface.addIndex('transactions', ['transaction_correlation_id']);
     await queryInterface.addIndex('transactions', ['card_id']);
     await queryInterface.addIndex('transactions', ['user_id']);
-
-    await queryInterface.addIndex(
-      'transactions',
-      ['authorization_transaction_id', 'processor_id'],
-      {
-        unique: true,
-      },
-    );
-
-    await queryInterface.addIndex('transactions', ['clearing_transaction_id', 'processor_id'], {
+    await queryInterface.addIndex('transactions', ['transaction_correlation_id', 'processor_id'], {
       unique: true,
-      where: {
-        clearing_transaction_id: {
-          [Op.ne]: null,
-        },
-      },
     });
   },
 

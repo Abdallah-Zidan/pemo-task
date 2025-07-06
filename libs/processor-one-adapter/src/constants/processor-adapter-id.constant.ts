@@ -1,1 +1,1 @@
-export const PROCESSOR_ONE_ADAPTER_ID = 'processor-one-adapter';
+export const PROCESSOR_ONE_ID = 'processor-one';

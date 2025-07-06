@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TransactionsModule } from './transactions/transactions.module';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Transaction, TransactionEvent, Card } from './transactions/models';
+import { Transaction, TransactionEvent, Card } from './models';
 import { BullModule } from '@nestjs/bullmq';
 
 @Module({

@@ -8,10 +8,10 @@ import {
 } from '@pemo-task/shared-types';
 import { ProcessorRequestData, processorRequestSchema } from '../schemas';
 import { SHA256SignatureVerificationService } from '../services';
-import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ADAPTER_ID } from '../constants';
+import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ID } from '../constants';
 import { Inject, Logger } from '@nestjs/common';
 
-@ProcessorAdapter(PROCESSOR_ONE_ADAPTER_ID)
+@ProcessorAdapter(PROCESSOR_ONE_ID)
 export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestData> {
   constructor(
     private readonly signatureVerificationService: SHA256SignatureVerificationService,
@@ -42,8 +42,8 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
         : validatedData.id;
 
     return Result.success({
-      amount: validatedData.billing_amount,
-      currency: validatedData.billing_currency,
+      billingAmount: validatedData.billing_amount,
+      billingCurrency: validatedData.billing_currency,
       status: this.mapTypeToStatus(validatedData.message_type),
       type: validatedData.message_type,
       userId: validatedData.user_id,
@@ -54,8 +54,11 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
         validatedData.message_type === TransactionType.CLEARING ? validatedData.id : undefined,
       //* we will authorization transaction id as the correlation id for both authorization and clearing transactions
       transactionCorrelationId: authorizationTransactionId,
-      processorId: PROCESSOR_ONE_ADAPTER_ID,
+      processorId: PROCESSOR_ONE_ID,
       isSuccessful: this.isSuccessfulTransaction(validatedData.status_code),
+      processorName: 'Processor One',
+      mcc: validatedData.mcc,
+      referenceNumber: validatedData.rrn,
     });
   }
 

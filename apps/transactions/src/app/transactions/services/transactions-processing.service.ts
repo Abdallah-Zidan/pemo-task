@@ -4,13 +4,13 @@ import { InjectModel } from '@nestjs/sequelize';
 import {
   isObject,
   ITransactionDetails,
+  TransactionEventType,
   TransactionStatus,
   TransactionType,
 } from '@pemo-task/shared-types';
 import { WhereOptions } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { EventType } from '../enums';
-import { Transaction, TransactionEvent } from '../models';
+import { Transaction, TransactionEvent } from '../../models';
 
 @Injectable()
 export class TransactionService {
@@ -28,35 +28,26 @@ export class TransactionService {
   async processAuthorizationTransaction(data: ITransactionDetails) {
     return this.sequelize.transaction(async (t) => {
       try {
-        const existing = await this.transactionModel.findOne({
+        const [transaction, isNew] = await this.transactionModel.findOrCreate({
           where: {
-            //* in case of authorization transaction, we check if a transaction exists with
-            //* same authorizationTransactionId and same processorId
             transactionCorrelationId: data.transactionCorrelationId,
             processorId: data.processorId,
           } as WhereOptions<Transaction>,
+          defaults: Transaction.createNewModel(data),
           transaction: t,
-          lock: t.LOCK.UPDATE,
         });
 
-        if (existing) {
+        if (!isNew) {
           this.logger.warn(
-            `transaction with same authorizationTransactionId and processorId already exists: ${existing.processorId}:${existing.authorizationTransactionId}`,
+            `transaction with same authorizationTransactionId and processorId already exists: ${transaction.processorId}:${transaction.authorizationTransactionId}`,
           );
-          return existing;
+          return;
         }
-
-        const transaction = await this.transactionModel.create(
-          {
-            ...data,
-          },
-          { transaction: t },
-        );
 
         await this.transactionEventModel.create(
           {
             transactionId: transaction.id,
-            eventType: EventType.AUTHORIZATION_TRANSACTION_PROCESSED,
+            eventType: TransactionEventType.AUTHORIZATION_TRANSACTION_PROCESSED,
             data: {
               status: transaction.status,
               type: TransactionType.AUTHORIZATION,
@@ -67,10 +58,10 @@ export class TransactionService {
           { transaction: t },
         );
 
-        // this.eventEmitter.emit(
-        //   `transaction.${TransactionType.AUTHORIZATION}`,
-        //   transaction.toJSON(),
-        // );
+        this.eventEmitter.emit(
+          `transaction.${TransactionType.AUTHORIZATION}`,
+          transaction.toJSON(),
+        );
       } catch (error) {
         if (error instanceof Error) {
           this.logger.error(`Error processing transaction: ${error.message}`, error.stack);
@@ -112,17 +103,18 @@ export class TransactionService {
 
         let combinedMetadata = pendingTransaction.metadata;
 
-        if (isObject(data.metadata)) {
+        if (isObject(data.metadata) && isObject(pendingTransaction.metadata)) {
           combinedMetadata = {
             ...pendingTransaction.metadata,
             ...data.metadata,
           };
         }
 
-        //* update the transaction with the clearing data
         await this.transactionModel.update(
           {
-            ...data,
+            clearingAmount: data.billingAmount,
+            clearingTransactionId: data.clearingTransactionId,
+            status: data.status,
             metadata: combinedMetadata,
           },
           {
@@ -133,10 +125,14 @@ export class TransactionService {
           },
         );
 
+        const updatedTransaction = await this.transactionModel.findByPk(pendingTransaction.id, {
+          transaction: t,
+        });
+
         await this.transactionEventModel.create(
           {
             transactionId: pendingTransaction.id,
-            eventType: EventType.CLEARING_TRANSACTION_PROCESSED,
+            eventType: TransactionEventType.CLEARING_TRANSACTION_PROCESSED,
             data: {
               status: data.status,
               type: TransactionType.CLEARING,
@@ -146,6 +142,13 @@ export class TransactionService {
           },
           { transaction: t },
         );
+
+        if (updatedTransaction) {
+          this.eventEmitter.emit(
+            `transaction.${TransactionType.CLEARING}`,
+            updatedTransaction.toJSON(),
+          );
+        }
       } catch (error) {
         if (error instanceof Error) {
           this.logger.error(`Error processing transaction: ${error.message}`, error.stack);

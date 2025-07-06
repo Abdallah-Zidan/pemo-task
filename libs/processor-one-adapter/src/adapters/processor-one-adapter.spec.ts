@@ -3,7 +3,7 @@ import { ProcessorOneAdapter } from './processor-one-adapter';
 import { SHA256SignatureVerificationService } from '../services';
 import { TransactionStatus, TransactionType } from '@pemo-task/shared-types';
 import { ClearingRequestData, ProcessorRequestData } from '../schemas';
-import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ADAPTER_ID } from '../constants';
+import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ID } from '../constants';
 import { omit } from 'lodash';
 
 describe('ProcessorOneAdapter', () => {
@@ -112,8 +112,8 @@ describe('ProcessorOneAdapter', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data).toEqual({
-          amount: 100.5,
-          currency: 'USD',
+          billingAmount: 100.5,
+          billingCurrency: 'USD',
           status: TransactionStatus.PENDING,
           type: TransactionType.AUTHORIZATION,
           userId: 'user-123',
@@ -122,8 +122,11 @@ describe('ProcessorOneAdapter', () => {
           authorizationTransactionId: 'txn-123',
           clearingTransactionId: undefined,
           transactionCorrelationId: 'txn-123',
-          processorId: PROCESSOR_ONE_ADAPTER_ID,
+          processorId: PROCESSOR_ONE_ID,
           isSuccessful: true,
+          processorName: 'Processor One',
+          mcc: '5411',
+          referenceNumber: 'rrn-123',
         });
       }
     });
@@ -134,8 +137,8 @@ describe('ProcessorOneAdapter', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data).toEqual({
-          amount: 100.5,
-          currency: 'USD',
+          billingAmount: 100.5,
+          billingCurrency: 'USD',
           status: TransactionStatus.SETTLED,
           type: TransactionType.CLEARING,
           userId: 'user-123',
@@ -144,8 +147,11 @@ describe('ProcessorOneAdapter', () => {
           authorizationTransactionId: 'txn-123',
           clearingTransactionId: 'txn-123',
           transactionCorrelationId: 'txn-123',
-          processorId: PROCESSOR_ONE_ADAPTER_ID,
+          processorId: PROCESSOR_ONE_ID,
           isSuccessful: true,
+          processorName: 'Processor One',
+          mcc: '5411',
+          referenceNumber: 'rrn-123',
         });
       }
     });

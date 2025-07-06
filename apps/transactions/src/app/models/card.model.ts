@@ -45,5 +45,23 @@ export class Card extends Model {
     type: DataType.DECIMAL(19, 4),
     defaultValue: 0,
   })
+  availableCredit!: number;
+
+  @Column({
+    type: DataType.DECIMAL(19, 4),
+    defaultValue: 0,
+  })
+  settledBalance!: number;
+
+  @Column({
+    type: DataType.DECIMAL(19, 4),
+    defaultValue: 0,
+  })
+  pendingBalance!: number;
+
+  @Column({
+    type: DataType.DECIMAL(19, 4),
+    defaultValue: 0,
+  })
   currentUtilization!: number;
 }
