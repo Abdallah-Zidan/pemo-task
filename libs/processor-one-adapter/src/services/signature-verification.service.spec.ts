@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SHA256SignatureVerificationService } from './signature-verification.service';
-import { ConfigService } from '@nestjs/config';
 import * as crypto from 'node:crypto';
+import { MODULE_OPTIONS_TOKEN } from '../module.definition';
 
 jest.mock('node:crypto', () => ({
   createVerify: jest.fn(),
@@ -16,9 +16,9 @@ describe('SHA256SignatureVerificationService', () => {
       providers: [
         SHA256SignatureVerificationService,
         {
-          provide: ConfigService,
+          provide: MODULE_OPTIONS_TOKEN,
           useValue: {
-            getOrThrow: jest.fn().mockReturnValue('mock-public-key'),
+            publicKey: 'mock-public-key',
           },
         },
       ],
