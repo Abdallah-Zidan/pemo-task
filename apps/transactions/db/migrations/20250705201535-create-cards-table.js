@@ -24,6 +24,21 @@ module.exports = {
         defaultValue: 0,
         allowNull: false,
       },
+      available_credit: {
+        type: Sequelize.DECIMAL(19, 4),
+        defaultValue: 0,
+        allowNull: false,
+      },
+      settled_balance: {
+        type: Sequelize.DECIMAL(19, 4),
+        defaultValue: 0,
+        allowNull: false,
+      },
+      pending_balance: {
+        type: Sequelize.DECIMAL(19, 4),
+        defaultValue: 0,
+        allowNull: false,
+      },
       current_utilization: {
         type: Sequelize.DECIMAL(19, 4),
         defaultValue: 0,

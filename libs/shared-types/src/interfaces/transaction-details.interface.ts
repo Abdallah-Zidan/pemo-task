@@ -10,10 +10,13 @@ export interface ITransactionDetails<T = unknown> {
   processorId: string;
   type: TransactionType;
   status: TransactionStatus;
-  amount: number;
-  currency: string;
+  billingAmount: number;
+  billingCurrency: string;
   cardId: string;
   userId: string;
   metadata: T;
   isSuccessful: boolean;
+  processorName: string;
+  mcc: string;
+  referenceNumber: string;
 }
