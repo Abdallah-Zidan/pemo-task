@@ -1,7 +1,6 @@
 export const TransactionStatus = {
-  APPROVED: 'APPROVED',
-  FAILED: 'FAILED',
-  CANCELLED: 'CANCELLED',
+  PENDING: 'PENDING',
+  SETTLED: 'SETTLED',
 } as const;
 
 export type TransactionStatus = (typeof TransactionStatus)[keyof typeof TransactionStatus];

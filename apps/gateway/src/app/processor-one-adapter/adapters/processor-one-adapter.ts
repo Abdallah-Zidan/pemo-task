@@ -4,11 +4,13 @@ import {
   RequestHeaders,
   Result,
   TransactionStatus,
+  TransactionType,
 } from '@pemo-task/shared-types';
 import { ProcessorRequestData, processorRequestSchema } from '../schemas';
 import { SHA256SignatureVerificationService } from '../services';
+import { PROCESSOR_ONE_ADAPTER_ID } from '../constants';
 
-@ProcessorAdapter('processor-one-adapter')
+@ProcessorAdapter(PROCESSOR_ONE_ADAPTER_ID)
 export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestData> {
   constructor(private readonly signatureVerificationService: SHA256SignatureVerificationService) {}
 
@@ -27,16 +29,29 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
 
     const validatedData = validatedResult.data;
 
+    //! important note
+    // this applies in the case of processor one, where the authorization transaction id
+    // is the same as the clearing parent transaction id
+    const authorizationTransactionId =
+      validatedData.message_type === TransactionType.CLEARING
+        ? validatedData.parent_transaction_id
+        : validatedData.id;
+
     return Result.success({
       amount: validatedData.billing_amount,
       currency: validatedData.billing_currency,
-      status: this.mapStatusCodeToStatus(validatedData.status_code),
+      status: this.mapTypeToStatus(validatedData.message_type),
       type: validatedData.message_type,
       userId: validatedData.user_id,
       cardId: validatedData.card_id,
       metadata: validatedData,
-      processorTransactionId: validatedData.id,
-      processorId: 'processor-one-adapter',
+      authorizationTransactionId: authorizationTransactionId,
+      clearingTransactionId:
+        validatedData.message_type === TransactionType.CLEARING ? validatedData.id : undefined,
+      //* we will authorization transaction id as the correlation id for both authorization and clearing transactions
+      transactionCorrelationId: authorizationTransactionId,
+      processorId: PROCESSOR_ONE_ADAPTER_ID,
+      isSuccessful: this.isSuccessfulTransaction(validatedData.status_code),
     });
   }
 
@@ -72,19 +87,24 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
 
   /**
    * ! important note from Abd Allah
-   * the following method assumes the status code mapping since it wasn't clear from the task requirements
-   * how to map the status code to the transaction status
+   * the following method assumes the way of mapping the transaction type to the transaction status
+   * based on the document understanding, transaction is considered settled if it is a clearing transaction
+   * and pending if it is an authorization transaction
    */
-  private mapStatusCodeToStatus(statusCode: string): TransactionStatus {
-    if (statusCode === '0000') {
-      return TransactionStatus.APPROVED;
+  private mapTypeToStatus(transactionType: TransactionType): TransactionStatus {
+    if (transactionType === TransactionType.CLEARING) {
+      return TransactionStatus.SETTLED;
     }
+    return TransactionStatus.PENDING;
+  }
 
-    if (statusCode === '1111') {
-      return TransactionStatus.CANCELLED;
-    }
-
-    return TransactionStatus.FAILED;
+  /**
+   * ! important note from Abd Allah
+   * the following method assumes the status code mapping since it wasn't clear from the task requirements
+   * how to map the status code to the transaction status so I assumed that the status code 0000 is a success status code
+   */
+  private isSuccessfulTransaction(statusCode: string) {
+    return statusCode === '0000';
   }
 
   private extractSignatureFromHeaders(headers: RequestHeaders) {

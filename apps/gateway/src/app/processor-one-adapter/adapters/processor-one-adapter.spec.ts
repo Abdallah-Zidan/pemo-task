@@ -108,7 +108,8 @@ describe('ProcessorOneAdapter', () => {
           userId: 'user-123',
           cardId: 'card-123',
           metadata: validAuthorizationData,
-          processorTransactionId: 'txn-123',
+          authorizationTransactionId: 'txn-123',
+          transactionCorrelationId: 'txn-123',
           processorId: 'processor-one-adapter',
         });
       }
@@ -127,7 +128,8 @@ describe('ProcessorOneAdapter', () => {
           userId: 'user-123',
           cardId: 'card-123',
           metadata: validClearingData,
-          processorTransactionId: 'txn-123',
+          authorizationTransactionId: 'txn-123',
+          transactionCorrelationId: 'txn-123',
           processorId: 'processor-one-adapter',
         });
       }

@@ -2,27 +2,28 @@ syntax = "proto3";
 
 package transactions;
 
-service TransactionService {
-  rpc processTransaction(ProcessTransactionRequest) returns (ProcessTransactionResponse);
+
+service TransactionsService {
+  rpc ProcessTransaction(ProcessTransactionRequest) returns (ProcessTransactionResponse);
 }
 
 
 message ProcessTransactionRequest {
-  string processorTransactionId = 1;
-  string parentTransactionId = 2;
-  string processorId = 3;
-  string type = 4;
-  string status = 5;
-  double amount = 6;
-  string currency = 7;
-  string cardId = 8;
-  string userId = 9;
-  string metadata = 10; 
+  string authorizationTransactionId = 1;
+  optional string clearingTransactionId = 2;
+  string transactionCorrelationId = 3;
+  string processorId = 4;
+  string type = 5;
+  string status = 6;
+  double amount = 7;
+  string currency = 8;
+  string cardId = 9;
+  string userId = 10;
+  string metadata = 11;
+  bool isSuccessful = 12;
 }
 
 message ProcessTransactionResponse {
   bool success = 1;
 }
-
-
 
