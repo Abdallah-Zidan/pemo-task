@@ -19,7 +19,7 @@ import { TRANSACTIONS_CLIENT_NAME } from './constants';
           useFactory: (configService: ConfigService) => ({
             transport: Transport.GRPC,
             options: {
-              url: configService.get('TRANSACTIONS_SERVICE_URL'),
+              url: configService.getOrThrow('TRANSACTIONS_SERVICE_URL'),
               package: 'transactions',
               protoPath: join(__dirname, '../../../shared-proto/proto/transactions.proto'),
             },

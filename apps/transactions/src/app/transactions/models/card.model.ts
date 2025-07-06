@@ -1,0 +1,49 @@
+import { randomUUID } from 'node:crypto';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  PrimaryKey,
+  Default,
+  Unique,
+  Index,
+} from 'sequelize-typescript';
+
+@Table({
+  tableName: 'cards',
+  timestamps: true,
+  underscored: true,
+})
+export class Card extends Model {
+  @PrimaryKey
+  @Default(randomUUID)
+  @Column(DataType.UUID)
+  id!: string;
+
+  @Unique
+  @Index
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+  })
+  cardId!: string;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+  })
+  userId!: string;
+
+  @Column({
+    type: DataType.DECIMAL(19, 4),
+    defaultValue: 0,
+  })
+  creditLimit!: number;
+
+  @Column({
+    type: DataType.DECIMAL(19, 4),
+    defaultValue: 0,
+  })
+  currentUtilization!: number;
+}

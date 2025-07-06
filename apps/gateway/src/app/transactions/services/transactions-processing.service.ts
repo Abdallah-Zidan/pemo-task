@@ -22,13 +22,32 @@ export class TransactionsProcessingService {
     @Inject(TRANSACTIONS_CLIENT_NAME) private readonly transactionsClient: ClientGrpc,
   ) {
     this.transactionsGrpcService =
-      this.transactionsClient.getService<ITransactionsGrpcService>('TransactionService');
+      this.transactionsClient.getService<ITransactionsGrpcService>('TransactionsService');
   }
 
   async processTransaction(processorId: string, body: unknown, headers: RequestHeaders) {
     const validatedData = await this.validateAndParseTransaction(processorId, body);
+
+    //! important note from Abd Allah
+    //  we will not process the transaction if it is not successful since the document
+    //  doesn't mention anything about what to do with a failed transaction
+    if (!validatedData.isSuccessful) {
+      this.logger.warn(
+        'transaction is not successful, skipping processing for processor: %s',
+        processorId,
+      );
+      return;
+    }
+
     await this.authorizeTransaction(processorId, body, headers);
-    return firstValueFrom(this.transactionsGrpcService.processTransaction(validatedData));
+
+    return firstValueFrom(
+      this.transactionsGrpcService.ProcessTransaction({
+        ...validatedData,
+        //* easy workaround to send metadata as string for now
+        metadata: JSON.stringify(validatedData.metadata),
+      }),
+    );
   }
 
   private async validateAndParseTransaction(processorId: string, body: unknown) {

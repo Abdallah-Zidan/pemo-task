@@ -17,6 +17,13 @@
         }
       }
     },
+    "db:migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx sequelize-cli db:migrate",
+        "cwd": "apps/transactions/db"
+      }
+    },
     "serve": {
       "continuous": true,
       "executor": "@nx/js:node",
