@@ -1,0 +1,9 @@
+{
+  "name": "processor-one-adapter",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/processor-one-adapter/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project processor-one-adapter --web",
+  "targets": {}
+}

@@ -8,11 +8,15 @@ import {
 } from '@pemo-task/shared-types';
 import { ProcessorRequestData, processorRequestSchema } from '../schemas';
 import { SHA256SignatureVerificationService } from '../services';
-import { PROCESSOR_ONE_ADAPTER_ID } from '../constants';
+import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ADAPTER_ID } from '../constants';
+import { Inject, Logger } from '@nestjs/common';
 
 @ProcessorAdapter(PROCESSOR_ONE_ADAPTER_ID)
 export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestData> {
-  constructor(private readonly signatureVerificationService: SHA256SignatureVerificationService) {}
+  constructor(
+    private readonly signatureVerificationService: SHA256SignatureVerificationService,
+    @Inject(PROCESS_ONE_ADAPTER_LOGGER_TOKEN) private readonly logger: Logger,
+  ) {}
 
   validateAndParseTransaction(
     data: unknown,
@@ -72,6 +76,8 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
     }
 
     const payloadToSign = `${data.id}|${data.message_type}|${data.user_id}|${data.card_id}|${data.billing_amount}|${data.billing_currency}|${data.status_code}`;
+
+    this.logger.debug(`Verifying signature for payload: ${payloadToSign}`);
 
     const isSignatureValid = this.signatureVerificationService.verifySignature(
       payloadToSign,
