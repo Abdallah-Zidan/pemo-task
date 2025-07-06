@@ -3,7 +3,7 @@ import { ProcessorOneAdapter } from './processor-one-adapter';
 import { SHA256SignatureVerificationService } from '../services';
 import { TransactionStatus, TransactionType } from '@pemo-task/shared-types';
 import { ClearingRequestData, ProcessorRequestData } from '../schemas';
-import { PROCESSOR_ONE_ADAPTER_ID } from '../constants';
+import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ADAPTER_ID } from '../constants';
 import { omit } from 'lodash';
 
 describe('ProcessorOneAdapter', () => {
@@ -18,6 +18,15 @@ describe('ProcessorOneAdapter', () => {
           provide: SHA256SignatureVerificationService,
           useValue: {
             verifySignature: jest.fn(),
+          },
+        },
+        {
+          provide: PROCESS_ONE_ADAPTER_LOGGER_TOKEN,
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
           },
         },
       ],
