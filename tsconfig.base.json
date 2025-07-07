@@ -18,6 +18,7 @@
     "paths": {
       "@pemo-task/process-adapter-manager": ["libs/processor-adapter-manager/src/index.ts"],
       "@pemo-task/processor-one-adapter": ["libs/processor-one-adapter/src/index.ts"],
+      "@pemo-task/processor-two-adapter": ["libs/processor-two-adapter/src/index.ts"],
       "@pemo-task/shared-types": ["libs/shared-types/src/index.ts"]
     }
   },

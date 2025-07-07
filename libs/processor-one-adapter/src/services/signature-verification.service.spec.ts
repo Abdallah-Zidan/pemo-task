@@ -18,7 +18,7 @@ describe('SHA256SignatureVerificationService', () => {
         {
           provide: MODULE_OPTIONS_TOKEN,
           useValue: {
-            publicKey: 'mock-public-key',
+            publicKeyBase64: Buffer.from('mock-public-key', 'utf8').toString('base64'),
           },
         },
       ],

@@ -8,13 +8,13 @@ export class SHA256SignatureVerificationService {
   private readonly publicKey: string;
 
   constructor(@Inject(MODULE_OPTIONS_TOKEN) private readonly options: IModuleOptions) {
-    if (!this.options.publicKey) {
+    if (!this.options.publicKeyBase64) {
       throw new Error(
         'Public key is required for signature verification for Processor One adapter',
       );
     }
 
-    this.publicKey = this.options.publicKey;
+    this.publicKey = Buffer.from(this.options.publicKeyBase64, 'base64').toString('utf8');
   }
 
   verifySignature(data: string, signature: string): boolean {
