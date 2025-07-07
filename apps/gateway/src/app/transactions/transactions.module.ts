@@ -6,6 +6,7 @@ import { TransactionsProcessingService, TransactionsQueryService } from './servi
 import { ProcessorAdapterManagerModule } from '@pemo-task/process-adapter-manager';
 import { TRANSACTIONS_CLIENT_NAME } from './constants';
 import { ProcessorOneAdapterModule } from '@pemo-task/processor-one-adapter';
+import { ProcessorTwoAdapterModule } from '@pemo-task/processor-two-adapter';
 
 @Module({
   providers: [TransactionsProcessingService, TransactionsQueryService],
@@ -13,8 +14,16 @@ import { ProcessorOneAdapterModule } from '@pemo-task/processor-one-adapter';
     ProcessorAdapterManagerModule,
     ProcessorOneAdapterModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
-        publicKey: configService.getOrThrow('PROCESSOR_ONE_PUBLIC_KEY'),
+        publicKeyBase64: configService.getOrThrow('PROCESSOR_ONE_PUBLIC_KEY_BASE64'),
         logger: new Logger(ProcessorOneAdapterModule.name),
+      }),
+      inject: [ConfigService],
+    }),
+    ProcessorTwoAdapterModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        privateKeyBase64: configService.getOrThrow('PROCESSOR_TWO_PRIVATE_KEY_BASE64'),
+        apiKey: configService.getOrThrow('PROCESSOR_TWO_API_KEY'),
+        logger: new Logger(ProcessorTwoAdapterModule.name),
       }),
       inject: [ConfigService],
     }),

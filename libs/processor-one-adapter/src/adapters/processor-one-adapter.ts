@@ -1,6 +1,5 @@
 import { ProcessorAdapter, IProcessorAdapter } from '@pemo-task/process-adapter-manager';
 import {
-  ITransactionDetails,
   RequestHeaders,
   Result,
   TransactionStatus,
@@ -18,11 +17,7 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
     @Inject(PROCESS_ONE_ADAPTER_LOGGER_TOKEN) private readonly logger: Logger,
   ) {}
 
-  validateAndParseTransaction(
-    data: unknown,
-  ):
-    | Promise<Result<ITransactionDetails, string[]>>
-    | Result<ITransactionDetails<{ id: string }>, string[]> {
+  validateAndParseTransaction(data: unknown) {
     const validatedResult = processorRequestSchema.safeParse(data);
 
     if (!validatedResult.success) {
@@ -99,6 +94,7 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
    * the following method assumes the way of mapping the transaction type to the transaction status
    * based on the document understanding, transaction is considered settled if it is a clearing transaction
    * and pending if it is an authorization transaction
+   * since we ignore failed or rejected transactions
    */
   private mapTypeToStatus(transactionType: TransactionType): TransactionStatus {
     if (transactionType === TransactionType.CLEARING) {

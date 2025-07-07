@@ -1,6 +1,7 @@
 import { ILogger } from '@pemo-task/shared-types';
 
 export interface IModuleOptions {
-  publicKeyBase64: string;
+  privateKeyBase64: string;
+  apiKey: string;
   logger?: ILogger;
 }

@@ -35,8 +35,7 @@
       "plugin": "@nx/jest/plugin",
       "options": {
         "targetName": "test"
-      },
-      "exclude": ["apps/gateway-e2e/**/*"]
+      }
     }
   ],
   "targetDefaults": {
