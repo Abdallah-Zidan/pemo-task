@@ -110,7 +110,7 @@ export class TransactionService {
           };
         }
 
-        await this.transactionModel.update(
+        const updatedTransaction = await pendingTransaction.update(
           {
             clearingAmount: data.billingAmount,
             clearingTransactionId: data.clearingTransactionId,
@@ -118,16 +118,9 @@ export class TransactionService {
             metadata: combinedMetadata,
           },
           {
-            where: {
-              id: pendingTransaction.id,
-            },
             transaction: t,
           },
         );
-
-        const updatedTransaction = await this.transactionModel.findByPk(pendingTransaction.id, {
-          transaction: t,
-        });
 
         await this.transactionEventModel.create(
           {

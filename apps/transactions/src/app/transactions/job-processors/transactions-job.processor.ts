@@ -5,9 +5,7 @@ import { Job } from 'bullmq';
 import { TRANSACTIONS_PROCESSING_QUEUE } from '../constants';
 import { TransactionService } from '../services';
 
-@Processor(TRANSACTIONS_PROCESSING_QUEUE, {
-  concurrency: 5,
-})
+@Processor(TRANSACTIONS_PROCESSING_QUEUE)
 export class TransactionsJobProcessor extends WorkerHost {
   private readonly logger = new Logger(TransactionsJobProcessor.name);
 

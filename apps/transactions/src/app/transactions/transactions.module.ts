@@ -7,25 +7,18 @@ import { TRANSACTIONS_PROCESSING_QUEUE } from './constants';
 import { TransactionService, TransactionsGrpcService } from './services';
 import { TransactionsJobProcessor } from './job-processors';
 import { TransactionsGrpcController } from './controllers';
-import { AuthorizationEventHandler, ClearingEventHandler } from './handlers';
+import { EventModule } from '../events/event.module';
 
 @Module({
   controllers: [TransactionsGrpcController],
   imports: [
+    EventModule,
     SequelizeModule.forFeature([Transaction, TransactionEvent, Card]),
-
     BullModule.registerQueue({
       name: TRANSACTIONS_PROCESSING_QUEUE,
     }),
-
     EventEmitterModule.forRoot(),
   ],
-  providers: [
-    TransactionService,
-    TransactionsGrpcService,
-    TransactionsJobProcessor,
-    AuthorizationEventHandler,
-    ClearingEventHandler,
-  ],
+  providers: [TransactionService, TransactionsGrpcService, TransactionsJobProcessor],
 })
 export class TransactionsModule {}

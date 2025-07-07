@@ -51,12 +51,26 @@ export class ClearingEventHandler {
       transaction: dbTransaction,
     });
 
-    if (card) {
+    if (card && transaction.clearingAmount) {
+      const newSettledBalance = card.settledBalance + transaction.clearingAmount;
+      const newPendingAmount = card.pendingBalance - transaction.authAmount;
+      const newUtilization = ((newSettledBalance + newPendingAmount) / card.creditLimit) * 100;
+
+      await card.update(
+        {
+          settledBalance: newSettledBalance,
+          pendingBalance: newPendingAmount,
+          currentUtilization: newUtilization,
+        },
+        { transaction: dbTransaction },
+      );
+
       this.logger.log(
-        `Card ${card.cardId} utilization remains at ${card.currentUtilization} after clearing`,
+        `Card ${card.cardId} utilization updated to ${newUtilization} after clearing`,
       );
     } else {
       this.logger.warn(`Card ${transaction.cardId} not found for clearing transaction`);
+      //! we might need to handle this case
     }
   }
 

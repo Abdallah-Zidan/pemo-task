@@ -7,6 +7,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { Transaction } from '../../models';
 import { Transaction as DBTransaction } from 'sequelize';
 import { TransactionEventType, TransactionType } from '@pemo-task/shared-types';
+import { CARD_LIMIT } from '../constants';
 
 @Injectable()
 export class AuthorizationEventHandler {
@@ -49,26 +50,41 @@ export class AuthorizationEventHandler {
       defaults: {
         cardId: transaction.cardId,
         userId: transaction.userId,
-        creditLimit: 10000,
-        currentUtilization: transaction.authAmount,
+        creditLimit: CARD_LIMIT,
+        pendingBalance: transaction.authAmount,
+        settledBalance: 0,
+        currentUtilization: (transaction.authAmount / CARD_LIMIT) * 100,
+        availableCredit: CARD_LIMIT - transaction.authAmount,
       },
       transaction: dbTransaction,
+      lock: dbTransaction.LOCK.UPDATE,
     });
 
     if (isNew) {
-      this.logger.log(`Created new card ${card.cardId} with utilization ${transaction.authAmount}`);
+      this.logger.log(
+        `Created new card ${card.cardId} with utilization ${card.currentUtilization}`,
+      );
     } else {
-      const newUtilization =
-        parseFloat(card.currentUtilization.toString()) +
-        parseFloat(transaction.authAmount.toString());
+      const pendingBalance = card.pendingBalance + transaction.authAmount;
+      const availableCredit = CARD_LIMIT - pendingBalance;
+      const newUtilization = (pendingBalance / CARD_LIMIT) * 100;
       await card.update(
         {
+          pendingBalance,
+          availableCredit,
           currentUtilization: newUtilization,
         },
         { transaction: dbTransaction },
       );
 
       this.logger.log(`Updated card ${card.cardId} utilization to ${newUtilization}`);
+    }
+
+    if (card.currentUtilization > 100) {
+      this.logger.error(
+        `Card ${card.cardId} has exceeded the credit limit. Current utilization: ${card.currentUtilization}`,
+      );
+      //! we might block the card or apply any action here
     }
   }
 
