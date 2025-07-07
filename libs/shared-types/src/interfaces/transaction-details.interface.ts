@@ -20,3 +20,27 @@ export interface ITransactionDetails<T = unknown> {
   mcc: string;
   referenceNumber: string;
 }
+
+export type ITransactionDetailsResponse<T = unknown> = Omit<
+  ITransactionDetails<T>,
+  'isSuccessful'
+> & {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export interface IGetTransactionResponse<T = unknown> {
+  transactions: ITransactionDetailsResponse<T>[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface IGetTransactionsRequest {
+  cardId?: string;
+  processorId?: string;
+  status?: TransactionStatus;
+  page: number;
+  limit: number;
+}

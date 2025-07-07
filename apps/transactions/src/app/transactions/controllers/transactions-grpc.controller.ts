@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import { ITransactionDetails } from '@pemo-task/shared-types';
+import { IGetTransactionsRequest, ITransactionDetails } from '@pemo-task/shared-types';
 import { TransactionsGrpcService } from '../services';
 
 @Controller()
@@ -9,5 +9,10 @@ export class TransactionsGrpcController {
   @GrpcMethod('TransactionsService', 'ProcessTransaction')
   async processTransaction(data: ITransactionDetails) {
     return this.transactionsGrpcService.processTransaction(data);
+  }
+
+  @GrpcMethod('TransactionsService', 'GetTransactions')
+  async getTransactions(query: IGetTransactionsRequest) {
+    return this.transactionsGrpcService.getTransactions(query);
   }
 }

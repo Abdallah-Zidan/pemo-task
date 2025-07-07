@@ -4,26 +4,66 @@ package transactions;
 
 
 service TransactionsService {
-  rpc ProcessTransaction(ProcessTransactionRequest) returns (ProcessTransactionResponse);
+  rpc ProcessTransaction(TransactionProcessingRequest) returns (ProcessTransactionResponse);
+  rpc GetTransactions(GetTransactionsRequest) returns (GetTransactionsResponse);
+
 }
 
 
-message ProcessTransactionRequest {
+message TransactionProcessingRequest {
   string authorizationTransactionId = 1;
   optional string clearingTransactionId = 2;
   string transactionCorrelationId = 3;
   string processorId = 4;
   string type = 5;
   string status = 6;
-  double amount = 7;
-  string currency = 8;
+  double billingAmount = 7;
+  string billingCurrency = 8;
   string cardId = 9;
   string userId = 10;
   string metadata = 11;
-  bool isSuccessful = 12;
+  optional bool isSuccessful = 12;
+  string processorName = 13;
+  string mcc = 14;
+  string referenceNumber = 15;
 }
 
 message ProcessTransactionResponse {
   bool success = 1;
 }
 
+
+message GetTransactionsRequest {
+  optional string cardId = 1;
+  optional string processorId = 2;
+  optional string status = 3;
+  int32 page = 4;
+  int32 limit = 5;
+}
+
+message TransactionDetailsResponse {
+  string id = 1;
+  string authorizationTransactionId = 2;
+  optional string clearingTransactionId = 3;
+  string transactionCorrelationId = 4;
+  string processorId = 5;
+  string type = 6;
+  string status = 7;
+  double billingAmount = 8;
+  string billingCurrency = 9;
+  string cardId = 10;
+  string userId = 11;
+  string metadata = 12;
+  string processorName = 13;
+  string mcc = 14;
+  string referenceNumber = 15;
+  string createdAt = 16;
+  string updatedAt = 17;
+}
+
+message GetTransactionsResponse {
+  repeated TransactionDetailsResponse transactions = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
