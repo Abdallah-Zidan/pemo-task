@@ -21,7 +21,7 @@ message TransactionProcessingRequest {
   string billingCurrency = 8;
   string cardId = 9;
   string userId = 10;
-  string metadata = 11;
+  map<string, string> metadata = 11;
   optional bool isSuccessful = 12;
   string processorName = 13;
   string mcc = 14;
@@ -53,7 +53,7 @@ message TransactionDetailsResponse {
   string billingCurrency = 9;
   string cardId = 10;
   string userId = 11;
-  string metadata = 12;
+  map<string, string> metadata = 12;
   string processorName = 13;
   string mcc = 14;
   string referenceNumber = 15;

@@ -17,7 +17,7 @@ export class TransactionsGrpcService {
       'process-transaction',
       {
         ...data,
-        metadata: typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata,
+        metadata: data.metadata,
       },
       {
         attempts: 3,
