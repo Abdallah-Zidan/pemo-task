@@ -1,19 +1,23 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
-import { ITransactionDetails } from '@pemo-task/shared-types';
+import { IGetTransactionsRequest, ITransactionDetails } from '@pemo-task/shared-types';
 import { Queue } from 'bullmq';
 import { TRANSACTIONS_PROCESSING_QUEUE } from '../constants';
+import { TransactionQueryService } from './transaction-query.service';
 
 @Injectable()
 export class TransactionsGrpcService {
-  constructor(@InjectQueue(TRANSACTIONS_PROCESSING_QUEUE) private queue: Queue) {}
+  constructor(
+    @InjectQueue(TRANSACTIONS_PROCESSING_QUEUE) private queue: Queue,
+    private readonly transactionsQueryService: TransactionQueryService,
+  ) {}
 
   async processTransaction(data: ITransactionDetails): Promise<{ success: boolean }> {
     await this.queue.add(
       'process-transaction',
       {
         ...data,
-        metadata: typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata,
+        metadata: data.metadata,
       },
       {
         attempts: 3,
@@ -32,5 +36,9 @@ export class TransactionsGrpcService {
     );
 
     return { success: true };
+  }
+
+  getTransactions(query: IGetTransactionsRequest) {
+    return this.transactionsQueryService.getTransactions(query);
   }
 }

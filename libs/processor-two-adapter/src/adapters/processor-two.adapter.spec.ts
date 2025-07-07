@@ -204,12 +204,8 @@ describe('ProcessorTwoAdapter', () => {
           metadata: expect.objectContaining({
             id: 'req-123',
             type: 'ACCOUNT_TRANSACTION_CREATED',
-            transaction: expect.objectContaining({
-              id: 'txn-123',
-              details: expect.objectContaining({
-                scheme_billing_amount: 100.5,
-              }),
-            }),
+            'transaction.id': 'txn-123',
+            'transaction.details.scheme_billing_amount': 100.5,
           }),
           authorizationTransactionId: 'txn-123',
           clearingTransactionId: 'txn-123',
@@ -241,12 +237,8 @@ describe('ProcessorTwoAdapter', () => {
           metadata: expect.objectContaining({
             id: 'req-456',
             type: 'ACCOUNT_TRANSACTION_POSTED',
-            transaction: expect.objectContaining({
-              id: 'txn-123',
-              details: expect.objectContaining({
-                scheme_billing_amount: 100.5,
-              }),
-            }),
+            'transaction.id': 'txn-123',
+            'transaction.details.scheme_billing_amount': 100.5,
           }),
           authorizationTransactionId: 'txn-123',
           clearingTransactionId: 'txn-123',

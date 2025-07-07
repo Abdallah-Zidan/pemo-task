@@ -56,7 +56,7 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
       type: this.mapTransactionType(validatedData.type),
       userId: validatedData.transaction.scheme_merchant_id,
       cardId: validatedData.transaction.account_id,
-      metadata: validatedData,
+      metadata: this.flattenObject(validatedData),
       authorizationTransactionId: validatedData.transaction.id,
       clearingTransactionId: validatedData.transaction.id,
       transactionCorrelationId: validatedData.transaction.id,
@@ -106,5 +106,21 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
     return (
       status === ProcessorTransactionStatus.POSTED || status === ProcessorTransactionStatus.PENDING
     );
+  }
+
+  //TODO: move to a shared utility function
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  flattenObject(obj: any, prefix = '', result: any = {}) {
+    for (const key in obj) {
+      const value = obj[key];
+      const newKey = prefix ? `${prefix}.${key}` : key;
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        this.flattenObject(value, newKey, result);
+      } else {
+        result[newKey] = value;
+      }
+    }
+    return result;
   }
 }

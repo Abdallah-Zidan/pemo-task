@@ -4,6 +4,8 @@ import {
   TransactionsQueryService,
 } from '../../transactions/services';
 import { RequestHeaders } from '@pemo-task/shared-types';
+import { GetTransactionsQuery } from '../dtos/request';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class GatewayService {
@@ -16,7 +18,7 @@ export class GatewayService {
     return this.transactionProcessingService.processTransaction(processorId, body, headers);
   }
 
-  async getTransactions() {
-    return this.transactionQueryService.getTransactions();
+  getTransactions(query: GetTransactionsQuery) {
+    return firstValueFrom(this.transactionQueryService.getTransactions(query));
   }
 }

@@ -43,7 +43,7 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
       type: validatedData.message_type,
       userId: validatedData.user_id,
       cardId: validatedData.card_id,
-      metadata: validatedData,
+      metadata: this.flattenObject(validatedData),
       authorizationTransactionId: authorizationTransactionId,
       clearingTransactionId:
         validatedData.message_type === TransactionType.CLEARING ? validatedData.id : undefined,
@@ -120,5 +120,21 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
     }
 
     return signature;
+  }
+
+  //TODO: move to a shared utility function
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  flattenObject(obj: any, prefix = '', result: any = {}) {
+    for (const key in obj) {
+      const value = obj[key];
+      const newKey = prefix ? `${prefix}.${key}` : key;
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        this.flattenObject(value, newKey, result);
+      } else {
+        result[newKey] = value;
+      }
+    }
+    return result;
   }
 }

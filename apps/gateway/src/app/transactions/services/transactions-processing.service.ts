@@ -41,12 +41,15 @@ export class TransactionsProcessingService {
 
     await this.authorizeTransaction(processorId, body, headers);
 
+    const requestData = {
+      ...validatedData,
+      metadata: validatedData.metadata,
+    };
+    
+    this.logger.debug('Sending gRPC request with metadata:', JSON.stringify(requestData.metadata));
+    
     return firstValueFrom(
-      this.transactionsGrpcService.ProcessTransaction({
-        ...validatedData,
-        //* easy workaround to send metadata as string for now
-        metadata: JSON.stringify(validatedData.metadata),
-      }),
+      this.transactionsGrpcService.ProcessTransaction(requestData),
     );
   }
 
