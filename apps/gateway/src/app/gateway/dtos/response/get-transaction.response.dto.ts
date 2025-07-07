@@ -17,9 +17,9 @@ export class GetTransactionResponseDto {
   meta: PaginationMetaDto;
 
   constructor(response: IGetTransactionResponse) {
-    this.data = response.transactions.map(
-      (transaction) => new TransactionDetailsResponseDto(transaction),
-    );
+    this.data =
+      response.transactions?.map((transaction) => new TransactionDetailsResponseDto(transaction)) ??
+      [];
     this.meta = new PaginationMetaDto(response.total, response.page, response.limit);
   }
 }

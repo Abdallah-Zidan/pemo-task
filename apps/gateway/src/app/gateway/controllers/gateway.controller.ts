@@ -31,7 +31,8 @@ export class GatewayController {
     type: GetTransactionResponseDto,
   })
   @Get('transactions')
-  getTransactions(@Query() query: GetTransactionsQuery) {
-    return this.gatewayService.getTransactions(query);
+  async getTransactions(@Query() query: GetTransactionsQuery) {
+    const response = await this.gatewayService.getTransactions(query);
+    return new GetTransactionResponseDto(response);
   }
 }
