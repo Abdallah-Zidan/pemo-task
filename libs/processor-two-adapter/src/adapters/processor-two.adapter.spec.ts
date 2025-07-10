@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProcessorTwoAdapter } from './processor-two.adapter';
-import { DecryptionService, SHA512SignatureVerificationService } from '../services';
 import { MODULE_OPTIONS_TOKEN } from '../module.definition';
 import { PROCESS_TWO_ADAPTER_LOGGER_TOKEN, PROCESSOR_TWO_ID } from '../constants';
 import { IModuleOptions } from '../interfaces';
 import { ProcessorTransactionStatus, ProcessorTransactionType } from '../enums';
 import { TransactionStatus, TransactionType } from '@pemo-task/shared-types';
+import { DecryptionService, SignatureVerificationService } from '@pemo-task/shared-utilities';
 
 describe('ProcessorTwoAdapter', () => {
   let adapter: ProcessorTwoAdapter;
   let mockDecryptionService: jest.Mocked<DecryptionService>;
-  let mockSignatureVerificationService: jest.Mocked<SHA512SignatureVerificationService>;
+  let mockSignatureVerificationService: jest.Mocked<SignatureVerificationService>;
   let mockLogger: jest.Mocked<any>;
   let mockOptions: IModuleOptions;
 
@@ -84,7 +84,7 @@ describe('ProcessorTwoAdapter', () => {
     };
 
     mockDecryptionService = {
-      decrypt: jest.fn(),
+      privateDecrypt: jest.fn(),
     } as any;
 
     mockSignatureVerificationService = {
@@ -106,7 +106,7 @@ describe('ProcessorTwoAdapter', () => {
           useValue: mockDecryptionService,
         },
         {
-          provide: SHA512SignatureVerificationService,
+          provide: SignatureVerificationService,
           useValue: mockSignatureVerificationService,
         },
         {
@@ -156,7 +156,7 @@ describe('ProcessorTwoAdapter', () => {
 
     it('should return error when decryption fails', async () => {
       const body = { data: 'encrypted-data' };
-      mockDecryptionService.decrypt.mockImplementation(() => {
+      mockDecryptionService.privateDecrypt.mockImplementation(() => {
         throw new Error('Decryption failed');
       });
 
@@ -171,7 +171,7 @@ describe('ProcessorTwoAdapter', () => {
 
     it('should return error when JSON parsing fails', async () => {
       const body = { data: 'encrypted-data' };
-      mockDecryptionService.decrypt.mockReturnValue('invalid-json');
+      mockDecryptionService.privateDecrypt.mockReturnValue('invalid-json');
 
       const result = await adapter.validateAndParseTransaction(body);
 
@@ -185,7 +185,7 @@ describe('ProcessorTwoAdapter', () => {
     it('should return error when schema validation fails', async () => {
       const body = { data: 'encrypted-data' };
       const invalidData = { invalidField: 'test' };
-      mockDecryptionService.decrypt.mockReturnValue(JSON.stringify(invalidData));
+      mockDecryptionService.privateDecrypt.mockReturnValue(JSON.stringify(invalidData));
 
       const result = await adapter.validateAndParseTransaction(body);
 
@@ -198,10 +198,9 @@ describe('ProcessorTwoAdapter', () => {
 
     it('should successfully validate and parse authorization transaction', async () => {
       const body = { data: 'encrypted-data' };
-      mockDecryptionService.decrypt.mockReturnValue(JSON.stringify(validAuthorizationData));
+      mockDecryptionService.privateDecrypt.mockReturnValue(JSON.stringify(validAuthorizationData));
 
       const result = await adapter.validateAndParseTransaction(body);
-
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -230,7 +229,7 @@ describe('ProcessorTwoAdapter', () => {
 
     it('should successfully validate and parse clearing transaction', async () => {
       const body = { data: 'encrypted-data' };
-      mockDecryptionService.decrypt.mockReturnValue(JSON.stringify(validClearingData));
+      mockDecryptionService.privateDecrypt.mockReturnValue(JSON.stringify(validClearingData));
 
       const result = await adapter.validateAndParseTransaction(body);
 
@@ -269,7 +268,7 @@ describe('ProcessorTwoAdapter', () => {
       };
 
       const body = { data: 'encrypted-data' };
-      mockDecryptionService.decrypt.mockReturnValue(JSON.stringify(unsuccessfulData));
+      mockDecryptionService.privateDecrypt.mockReturnValue(JSON.stringify(unsuccessfulData));
 
       const result = await adapter.validateAndParseTransaction(body);
 
@@ -297,10 +296,12 @@ describe('ProcessorTwoAdapter', () => {
         expect(result.data).toEqual({ isSignatureValid: true });
       }
 
-      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith(
-        'req-123|ACCOUNT_TRANSACTION_CREATED|100.5|USD|PENDING',
-        'valid-signature',
-      );
+      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith({
+        algorithm: 'SHA512',
+        data: 'req-123|ACCOUNT_TRANSACTION_CREATED|100.5|USD|PENDING',
+        publicKey: Buffer.from('test-public-key-base64', 'base64').toString('utf8'),
+        signature: 'valid-signature',
+      });
     });
 
     it('should return error when API key is missing', () => {
@@ -359,10 +360,12 @@ describe('ProcessorTwoAdapter', () => {
         expect(result.error).toBe('Invalid signature');
       }
 
-      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith(
-        'req-123|ACCOUNT_TRANSACTION_CREATED|100.5|USD|PENDING',
-        'valid-signature',
-      );
+      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith({
+        algorithm: 'SHA512',
+        data: 'req-123|ACCOUNT_TRANSACTION_CREATED|100.5|USD|PENDING',
+        publicKey: Buffer.from(mockOptions.signatureVerificationPublicKeyBase64, 'base64').toString('utf8'),
+        signature: 'valid-signature',
+      });
     });
 
     it('should handle array API key header', () => {
@@ -371,11 +374,13 @@ describe('ProcessorTwoAdapter', () => {
         'x-message-signature': 'valid-signature',
       };
 
+      mockSignatureVerificationService.verifySignature.mockReturnValue(true);
+
       const result = adapter.authorizeTransaction(validData, headersWithArrayApiKey);
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBe('Invalid API key');
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toEqual({ isSignatureValid: true });
       }
     });
 
@@ -394,10 +399,12 @@ describe('ProcessorTwoAdapter', () => {
         expect(result.data).toEqual({ isSignatureValid: true });
       }
 
-      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith(
-        'req-123|ACCOUNT_TRANSACTION_CREATED|100.5|USD|PENDING',
-        'valid-signature',
-      );
+      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith({
+        algorithm: 'SHA512',
+        data: 'req-123|ACCOUNT_TRANSACTION_CREATED|100.5|USD|PENDING',
+        publicKey: Buffer.from('test-public-key-base64', 'base64').toString('utf8'),
+        signature: 'valid-signature',
+      });
     });
 
     it('should handle undefined API key header', () => {

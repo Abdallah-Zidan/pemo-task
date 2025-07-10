@@ -19,8 +19,8 @@
       "@pemo-task/process-adapter-manager": ["libs/processor-adapter-manager/src/index.ts"],
       "@pemo-task/processor-one-adapter": ["libs/processor-one-adapter/src/index.ts"],
       "@pemo-task/processor-two-adapter": ["libs/processor-two-adapter/src/index.ts"],
-      "@pemo-task/shared-config": ["libs/shared-config/src/index.ts"],
-      "@pemo-task/shared-types": ["libs/shared-types/src/index.ts"]
+      "@pemo-task/shared-types": ["libs/shared-types/src/index.ts"],
+      "@pemo-task/shared-utilities": ["libs/shared-utilities/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -1,23 +1,30 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProcessorOneAdapter } from './processor-one-adapter';
-import { SHA256SignatureVerificationService } from '../services';
 import { TransactionStatus, TransactionType } from '@pemo-task/shared-types';
 import { ClearingRequestData, ProcessorRequestData } from '../schemas';
 import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ID } from '../constants';
+import { MODULE_OPTIONS_TOKEN } from '../module.definition';
 import { omit } from 'lodash';
+import { SignatureVerificationService } from '@pemo-task/shared-utilities';
 
 describe('ProcessorOneAdapter', () => {
   let adapter: ProcessorOneAdapter;
-  let mockSignatureVerificationService: jest.Mocked<SHA256SignatureVerificationService>;
+  let mockSignatureVerificationService: jest.Mocked<SignatureVerificationService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProcessorOneAdapter,
         {
-          provide: SHA256SignatureVerificationService,
+          provide: SignatureVerificationService,
           useValue: {
             verifySignature: jest.fn(),
+          },
+        },
+        {
+          provide: MODULE_OPTIONS_TOKEN,
+          useValue: {
+            publicKeyBase64: Buffer.from('test-public-key').toString('base64'),
           },
         },
         {
@@ -33,7 +40,7 @@ describe('ProcessorOneAdapter', () => {
     }).compile();
 
     adapter = module.get<ProcessorOneAdapter>(ProcessorOneAdapter);
-    mockSignatureVerificationService = module.get(SHA256SignatureVerificationService);
+    mockSignatureVerificationService = module.get(SignatureVerificationService);
   });
 
   afterEach(() => {
@@ -106,8 +113,8 @@ describe('ProcessorOneAdapter', () => {
       expect(adapter).toBeDefined();
     });
 
-    it('should successfully validate and parse authorization transaction', async () => {
-      const result = await adapter.validateAndParseTransaction(validAuthorizationData);
+    it('should successfully validate and parse authorization transaction', () => {
+      const result = adapter.validateAndParseTransaction(validAuthorizationData);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -131,8 +138,8 @@ describe('ProcessorOneAdapter', () => {
       }
     });
 
-    it('should successfully validate and parse clearing transaction', async () => {
-      const result = await adapter.validateAndParseTransaction(validClearingData);
+    it('should successfully validate and parse clearing transaction', () => {
+      const result = adapter.validateAndParseTransaction(validClearingData);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -156,13 +163,13 @@ describe('ProcessorOneAdapter', () => {
       }
     });
 
-    it('should return error for invalid data', async () => {
+    it('should return error for invalid data', () => {
       const invalidData = {
         id: 'txn-123',
         // Missing required fields
       };
 
-      const result = await adapter.validateAndParseTransaction(invalidData);
+      const result = adapter.validateAndParseTransaction(invalidData);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -172,13 +179,13 @@ describe('ProcessorOneAdapter', () => {
       }
     });
 
-    it('should handle unsuccessful transaction status code', async () => {
+    it('should handle unsuccessful transaction status code', () => {
       const unsuccessfulData = {
         ...validAuthorizationData,
         status_code: '1111',
       };
 
-      const result = await adapter.validateAndParseTransaction(unsuccessfulData);
+      const result = adapter.validateAndParseTransaction(unsuccessfulData);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -253,10 +260,12 @@ describe('ProcessorOneAdapter', () => {
         expect(result.data).toEqual({ isSignatureValid: true });
       }
 
-      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith(
-        'txn-123|AUTHORIZATION|user-123|card-123|100.5|USD|0000',
-        'valid-signature',
-      );
+      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith({
+        data: 'txn-123|AUTHORIZATION|user-123|card-123|100.5|USD|0000',
+        signature: 'valid-signature',
+        publicKey: 'test-public-key',
+        algorithm: 'SHA256',
+      });
     });
 
     it('should return error when signature is missing', () => {
@@ -282,10 +291,12 @@ describe('ProcessorOneAdapter', () => {
         expect(result.error).toBe('Invalid signature');
       }
 
-      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith(
-        'txn-123|AUTHORIZATION|user-123|card-123|100.5|USD|0000',
-        'valid-signature',
-      );
+      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith({
+        data: 'txn-123|AUTHORIZATION|user-123|card-123|100.5|USD|0000',
+        signature: 'valid-signature',
+        publicKey: 'test-public-key',
+        algorithm: 'SHA256',
+      });
     });
 
     it('should handle array signature header', () => {
@@ -302,10 +313,12 @@ describe('ProcessorOneAdapter', () => {
         expect(result.data).toEqual({ isSignatureValid: true });
       }
 
-      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith(
-        'txn-123|AUTHORIZATION|user-123|card-123|100.5|USD|0000',
-        'valid-signature',
-      );
+      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith({
+        data: 'txn-123|AUTHORIZATION|user-123|card-123|100.5|USD|0000',
+        signature: 'valid-signature',
+        publicKey: 'test-public-key',
+        algorithm: 'SHA256',
+      });
     });
 
     it('should construct correct payload for signature verification', () => {
@@ -324,10 +337,12 @@ describe('ProcessorOneAdapter', () => {
 
       adapter.authorizeTransaction(testData as unknown as ProcessorRequestData, validHeaders);
 
-      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith(
-        'test-id|CLEARING|test-user|test-card|200.75|EUR|1111',
-        'valid-signature',
-      );
+      expect(mockSignatureVerificationService.verifySignature).toHaveBeenCalledWith({
+        data: 'test-id|CLEARING|test-user|test-card|200.75|EUR|1111',
+        signature: 'valid-signature',
+        publicKey: 'test-public-key',
+        algorithm: 'SHA256',
+      });
     });
   });
 

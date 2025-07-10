@@ -26,7 +26,7 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  const port = configService.get('PORT') || 3000;
+  const port = configService.get('GATEWAY_PORT') || 3000;
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('PEMO Gateway Microservice APIs')
