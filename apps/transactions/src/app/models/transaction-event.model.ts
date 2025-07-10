@@ -12,13 +12,17 @@ import {
 import { Transaction } from './transaction.model';
 import { randomUUID } from 'node:crypto';
 import { TransactionEventType } from '@pemo-task/shared-types';
+import { InferAttributes, InferCreationAttributes } from 'sequelize';
 
 @Table({
   tableName: 'transaction_events',
   timestamps: false,
   underscored: true,
 })
-export class TransactionEvent extends Model {
+export class TransactionEvent extends Model<
+  InferAttributes<TransactionEvent>,
+  InferCreationAttributes<TransactionEvent, { omit: 'id' | 'createdAt' | 'transaction' }>
+> {
   @PrimaryKey
   @Default(randomUUID)
   @Column(DataType.UUID)

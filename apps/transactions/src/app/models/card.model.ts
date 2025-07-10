@@ -9,13 +9,22 @@ import {
   Unique,
   Index,
 } from 'sequelize-typescript';
+import { InferAttributes, InferCreationAttributes } from 'sequelize';
 
 @Table({
   tableName: 'cards',
   timestamps: true,
   underscored: true,
 })
-export class Card extends Model {
+export class Card extends Model<
+  InferAttributes<Card>,
+  InferCreationAttributes<
+    Card,
+    {
+      omit: 'id';
+    }
+  >
+> {
   @PrimaryKey
   @Default(randomUUID)
   @Column(DataType.UUID)

@@ -31,7 +31,7 @@ export class ClearingEventHandler {
         {
           transactionId: transaction.id,
           eventType: TransactionEventType.CLEARING_EVENT_HANDLED,
-          eventData: {
+          data: {
             cardId: transaction.cardId,
             amount: transaction.clearingAmount,
           },
@@ -47,31 +47,35 @@ export class ClearingEventHandler {
   ): Promise<void> {
     const card = await this.cardModel.findOne({
       where: { cardId: transaction.cardId },
+      //! Notes from Abd Allah
+      // we need to lock the row for update to avoid lost updates in case the card exists and we are trying to update it
       lock: dbTransaction.LOCK.UPDATE,
       transaction: dbTransaction,
     });
 
-    if (card && transaction.clearingAmount) {
-      const newSettledBalance = card.settledBalance + transaction.clearingAmount;
-      const newPendingAmount = card.pendingBalance - transaction.authAmount;
-      const newUtilization = ((newSettledBalance + newPendingAmount) / card.creditLimit) * 100;
-
-      await card.update(
-        {
-          settledBalance: newSettledBalance,
-          pendingBalance: newPendingAmount,
-          currentUtilization: newUtilization,
-        },
-        { transaction: dbTransaction },
-      );
-
-      this.logger.log(
-        `Card ${card.cardId} utilization updated to ${newUtilization} after clearing`,
-      );
-    } else {
+    if (!card) {
       this.logger.warn(`Card ${transaction.cardId} not found for clearing transaction`);
       //! we might need to handle this case
+      return;
     }
+
+    const newSettledBalance = Number(card.settledBalance) + transaction.authAmount;
+    const newPendingBalance = Number(card.pendingBalance) - transaction.authAmount;
+    const newAvailableCredit = Number(card.creditLimit) - newSettledBalance - newPendingBalance;
+    const newUtilization =
+      ((newSettledBalance + newPendingBalance) / Number(card.creditLimit)) * 100;
+
+    await card.update(
+      {
+        settledBalance: newSettledBalance,
+        pendingBalance: newPendingBalance,
+        availableCredit: newAvailableCredit,
+        currentUtilization: newUtilization,
+      },
+      { transaction: dbTransaction },
+    );
+
+    this.logger.log(`Card ${card.cardId} utilization updated to ${newUtilization}% after clearing`);
   }
 
   private async sendAnalyticsEvent(
@@ -84,7 +88,7 @@ export class ClearingEventHandler {
       {
         transactionId: transaction.id,
         eventType: TransactionEventType.ANALYTICS_SENT,
-        eventData: {
+        data: {
           transactionType: TransactionType.CLEARING,
           amount: transaction.clearingAmount,
           currency: transaction.currency,

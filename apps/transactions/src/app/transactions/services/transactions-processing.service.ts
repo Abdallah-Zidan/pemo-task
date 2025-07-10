@@ -33,7 +33,20 @@ export class TransactionService {
             transactionCorrelationId: data.transactionCorrelationId,
             processorId: data.processorId,
           } as WhereOptions<Transaction>,
-          defaults: Transaction.createNewModel(data),
+          defaults: {
+            processorId: data.processorId,
+            processorName: data.processorName,
+            transactionCorrelationId: data.transactionCorrelationId,
+            authorizationTransactionId: data.authorizationTransactionId,
+            status: data.status,
+            authAmount: data.billingAmount,
+            currency: data.billingCurrency,
+            mcc: data.mcc,
+            cardId: data.cardId,
+            userId: data.userId,
+            referenceNumber: data.referenceNumber,
+            metadata: data.metadata,
+          },
           transaction: t,
         });
 

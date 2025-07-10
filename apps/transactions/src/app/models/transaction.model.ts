@@ -1,4 +1,4 @@
-import { ITransactionDetails, TransactionStatus } from '@pemo-task/shared-types';
+import { TransactionStatus } from '@pemo-task/shared-types';
 import { randomUUID } from 'node:crypto';
 import {
   Column,
@@ -11,6 +11,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { TransactionEvent } from './transaction-event.model';
+import { InferAttributes, InferCreationAttributes } from 'sequelize';
 
 //!important note from Abd Allah
 // there were no clear definition for the transaction table, so I made some assumptions
@@ -26,7 +27,10 @@ import { TransactionEvent } from './transaction-event.model';
     },
   ],
 })
-export class Transaction extends Model {
+export class Transaction extends Model<
+  InferAttributes<Transaction>,
+  InferCreationAttributes<Transaction, { omit: 'id' | 'createdAt' | 'events' }>
+> {
   @PrimaryKey
   @Default(randomUUID)
   @Column(DataType.UUID)
@@ -121,21 +125,4 @@ export class Transaction extends Model {
 
   @HasMany(() => TransactionEvent)
   events!: TransactionEvent[];
-
-  static createNewModel(data: ITransactionDetails): Partial<Transaction> {
-    return {
-      processorId: data.processorId,
-      processorName: data.processorName,
-      transactionCorrelationId: data.transactionCorrelationId,
-      authorizationTransactionId: data.authorizationTransactionId,
-      status: data.status,
-      authAmount: data.billingAmount,
-      currency: data.billingCurrency,
-      mcc: data.mcc,
-      cardId: data.cardId,
-      userId: data.userId,
-      referenceNumber: data.referenceNumber,
-      metadata: data.metadata,
-    };
-  }
 }

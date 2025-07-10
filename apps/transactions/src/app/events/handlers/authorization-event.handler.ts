@@ -31,7 +31,7 @@ export class AuthorizationEventHandler {
         {
           transactionId: transaction.id,
           eventType: TransactionEventType.AUTHORIZATION_EVENT_HANDLED,
-          eventData: {
+          data: {
             cardId: transaction.cardId,
             amount: transaction.authAmount,
           },
@@ -45,6 +45,12 @@ export class AuthorizationEventHandler {
     transaction: Transaction,
     dbTransaction: DBTransaction,
   ): Promise<void> {
+    /**
+     * ! Notes from Abd Allah
+     * in order race conditions that might cause phantom reads and create duplicate cards
+     * the approach is to use findOrCreate from sequelize + have unique constraint on cardId
+     * that way in case of race condition, the findOrCreate will return the existing card and not create a new one
+     */
     const [card, isNew] = await this.cardModel.findOrCreate({
       where: { cardId: transaction.cardId },
       defaults: {
@@ -57,34 +63,41 @@ export class AuthorizationEventHandler {
         availableCredit: CARD_LIMIT - transaction.authAmount,
       },
       transaction: dbTransaction,
+      //! Notes from Abd Allah
+      // we need to lock the row for update to avoid lost updates in case the card exists and we are trying to update it
       lock: dbTransaction.LOCK.UPDATE,
     });
 
     if (isNew) {
       this.logger.log(
-        `Created new card ${card.cardId} with utilization ${card.currentUtilization}`,
+        `Created new card ${card.cardId} with utilization ${card.currentUtilization}%`,
       );
     } else {
-      const pendingBalance = card.pendingBalance + transaction.authAmount;
-      const availableCredit = CARD_LIMIT - pendingBalance;
-      const newUtilization = (pendingBalance / CARD_LIMIT) * 100;
+      const newPendingBalance = Number(card.pendingBalance) + transaction.authAmount;
+      const newAvailableCredit = card.creditLimit - newPendingBalance;
+      const newUtilization = (newPendingBalance / card.creditLimit) * 100;
+
       await card.update(
         {
-          pendingBalance,
-          availableCredit,
+          pendingBalance: newPendingBalance,
+          availableCredit: newAvailableCredit,
           currentUtilization: newUtilization,
         },
         { transaction: dbTransaction },
       );
 
-      this.logger.log(`Updated card ${card.cardId} utilization to ${newUtilization}`);
+      this.logger.log(`Updated card ${card.cardId} utilization to ${newUtilization}%`);
     }
 
+    /**
+     * ! Notes from Abd Allah
+     * Check for credit limit violations
+     * we might block the card or apply any action here
+     */
     if (card.currentUtilization > 100) {
       this.logger.error(
-        `Card ${card.cardId} has exceeded the credit limit. Current utilization: ${card.currentUtilization}`,
+        `Card ${card.cardId} has exceeded the credit limit. Current utilization: ${card.currentUtilization}%`,
       );
-      //! we might block the card or apply any action here
     }
   }
 
@@ -100,7 +113,7 @@ export class AuthorizationEventHandler {
       {
         transactionId: transaction.id,
         eventType: TransactionEventType.CARDHOLDER_NOTIFIED,
-        eventData: {
+        data: {
           userId: transaction.userId,
           notificationType: TransactionType.AUTHORIZATION,
           amount: transaction.authAmount,
