@@ -45,6 +45,13 @@ export class ClearingEventHandler {
     transaction: Transaction,
     dbTransaction: DBTransaction,
   ): Promise<void> {
+    if (!transaction.clearingAmount) {
+      this.logger.warn(
+        `Clearing amount: ${transaction.clearingAmount} is zero or not set for transaction ${transaction.id} skipping update`,
+      );
+      return;
+    }
+
     const card = await this.cardModel.findOne({
       where: { cardId: transaction.cardId },
       //! Notes from Abd Allah

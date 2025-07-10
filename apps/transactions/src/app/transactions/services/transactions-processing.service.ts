@@ -39,6 +39,7 @@ export class TransactionService {
             transactionCorrelationId: data.transactionCorrelationId,
             authorizationTransactionId: data.authorizationTransactionId,
             status: data.status,
+            type: TransactionType.AUTHORIZATION,
             authAmount: data.billingAmount,
             currency: data.billingCurrency,
             mcc: data.mcc,
@@ -129,6 +130,7 @@ export class TransactionService {
             clearingTransactionId: data.clearingTransactionId,
             status: data.status,
             metadata: combinedMetadata,
+            type: TransactionType.CLEARING,
           },
           {
             transaction: t,

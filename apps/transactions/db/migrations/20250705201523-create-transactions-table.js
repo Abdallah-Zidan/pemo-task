@@ -26,6 +26,10 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: true,
       },
+      type: {
+        type: Sequelize.ENUM('AUTHORIZATION', 'CLEARING'),
+        allowNull: false,
+      },
       status: {
         type: Sequelize.ENUM('PENDING', 'SETTLED'),
         allowNull: false,

@@ -1,4 +1,4 @@
-import { TransactionStatus } from '@pemo-task/shared-types';
+import { TransactionStatus, TransactionType } from '@pemo-task/shared-types';
 import { randomUUID } from 'node:crypto';
 import {
   Column,
@@ -72,6 +72,12 @@ export class Transaction extends Model<
     allowNull: false,
   })
   status!: TransactionStatus;
+
+  @Column({
+    type: DataType.ENUM(...Object.values(TransactionType)),
+    allowNull: false,
+  })
+  type!: TransactionType;
 
   @Column({
     type: DataType.DECIMAL(19, 4),

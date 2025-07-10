@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Transaction } from '../../models';
 import { InjectModel } from '@nestjs/sequelize';
-import { IGetTransactionsRequest, IGetTransactionResponse } from '@pemo-task/shared-types';
+import {
+  IGetTransactionsRequest,
+  IGetTransactionResponse,
+  TransactionType,
+} from '@pemo-task/shared-types';
 
 @Injectable()
 export class TransactionQueryService {
@@ -34,14 +38,28 @@ export class TransactionQueryService {
     });
 
     return {
-      transactions: transactions.rows.map((transaction) => ({
-        ...transaction.toJSON(),
-        createdAt: transaction.createdAt.toISOString(),
-        updatedAt: transaction.updatedAt.toISOString(),
-      })),
+      transactions: transactions.rows.map((transaction) => {
+        const jsonData = transaction.toJSON();
+        return {
+          ...jsonData,
+          type: transaction.type,
+          billingAmount: this.getBillingAmount(transaction),
+          billingCurrency: transaction.currency,
+          clearingTransactionId: jsonData.clearingTransactionId || undefined,
+          createdAt: transaction.createdAt.toISOString(),
+          updatedAt: transaction.updatedAt.toISOString(),
+        };
+      }),
       total: transactions.count,
       page,
       limit,
     };
+  }
+
+  private getBillingAmount(transaction: Transaction) {
+    return transaction.type === TransactionType.AUTHORIZATION
+      ? transaction.authAmount
+      : //! fallback to auth amount if clearing amount is not set
+        transaction.clearingAmount ?? transaction.authAmount;
   }
 }
