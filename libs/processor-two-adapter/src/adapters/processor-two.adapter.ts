@@ -1,4 +1,3 @@
-import { DecryptionService, SHA512SignatureVerificationService } from '../services';
 import { PROCESS_TWO_ADAPTER_LOGGER_TOKEN, PROCESSOR_TWO_ID } from '../constants';
 import { IProcessorAdapter, ProcessorAdapter } from '@pemo-task/process-adapter-manager';
 import {
@@ -16,15 +15,34 @@ import { MODULE_OPTIONS_TOKEN } from '../module.definition';
 import { IModuleOptions } from '../interfaces';
 import { ProcessorTransactionStatus, ProcessorTransactionType } from '../enums';
 import { ProcessorRequestData, processorRequestSchema } from '../schemas';
+import {
+  DecryptionService,
+  extractSingleHeader,
+  flattenObject,
+  SignatureVerificationService,
+} from '@pemo-task/shared-utilities';
 
 @ProcessorAdapter(PROCESSOR_TWO_ID)
 export class ProcessorTwoAdapter implements IProcessorAdapter {
+  private readonly decryptionPrivateKey: string;
+  private readonly signaturePublicKey: string;
+
   constructor(
     private readonly decryptionService: DecryptionService,
     @Inject(MODULE_OPTIONS_TOKEN) private readonly options: IModuleOptions,
     @Inject(PROCESS_TWO_ADAPTER_LOGGER_TOKEN) private readonly logger: ILogger,
-    private readonly signatureVerificationService: SHA512SignatureVerificationService,
-  ) {}
+    private readonly signatureVerificationService: SignatureVerificationService,
+  ) {
+    this.decryptionPrivateKey = Buffer.from(
+      this.options.decryptionPrivateKeyBase64,
+      'base64',
+    ).toString('utf8');
+    this.signaturePublicKey = Buffer.from(
+      this.options.signatureVerificationPublicKeyBase64,
+      'base64',
+    ).toString('utf8');
+  }
+
   async validateAndParseTransaction(body: unknown): Promise<Result<ITransactionDetails, string[]>> {
     if (!hasProperty(body, 'data') || !isString(body.data)) {
       return Result.error(['Invalid data']);
@@ -33,7 +51,11 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
     let data: unknown;
 
     try {
-      const decryptedData = this.decryptionService.decrypt(body.data);
+      const decryptedData = this.decryptionService.privateDecrypt({
+        data: body.data,
+        privateKey: this.decryptionPrivateKey,
+        algorithm: 'SHA512',
+      });
       data = JSON.parse(decryptedData);
     } catch (error) {
       this.logger.error(error as string);
@@ -57,7 +79,7 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
       type: this.mapTransactionType(validatedData.type),
       userId: validatedData.transaction.scheme_merchant_id,
       cardId: validatedData.transaction.account_id,
-      metadata: this.flattenObject(validatedData),
+      metadata: flattenObject(validatedData),
       authorizationTransactionId: validatedData.transaction.id,
       clearingTransactionId: validatedData.transaction.id,
       transactionCorrelationId: validatedData.transaction.id,
@@ -72,13 +94,13 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
   //! important note: this is an assumption ... just to show case different way of handling authorization
   //! in the case of processor two we have api key and signature verification
   authorizeTransaction(data: ProcessorRequestData, headers: RequestHeaders) {
-    const apiKey = headers['x-api-key'];
+    const apiKey = extractSingleHeader(headers, 'x-api-key');
 
     if (apiKey !== this.options.apiKey) {
       return Result.error('Invalid API key');
     }
 
-    const signature = this.extractSignatureFromHeaders(headers);
+    const signature = extractSingleHeader(headers, 'x-message-signature');
 
     if (!signature) {
       return Result.error('Signature is required');
@@ -88,10 +110,12 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
 
     this.logger.debug(`Verifying signature for payload: ${payloadToSign}`);
 
-    const isSignatureValid = this.signatureVerificationService.verifySignature(
-      payloadToSign,
+    const isSignatureValid = this.signatureVerificationService.verifySignature({
+      data: payloadToSign,
       signature,
-    );
+      publicKey: this.signaturePublicKey,
+      algorithm: 'SHA512',
+    });
 
     if (!isSignatureValid) {
       return Result.error('Invalid signature');
@@ -126,31 +150,5 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
     return (
       status === ProcessorTransactionStatus.POSTED || status === ProcessorTransactionStatus.PENDING
     );
-  }
-
-  private extractSignatureFromHeaders(headers: RequestHeaders) {
-    const signature = headers['x-message-signature'];
-
-    if (Array.isArray(signature)) {
-      return signature[0];
-    }
-
-    return signature;
-  }
-
-  //TODO: move to a shared utility function
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  flattenObject(obj: any, prefix = '', result: any = {}) {
-    for (const key in obj) {
-      const value = obj[key];
-      const newKey = prefix ? `${prefix}.${key}` : key;
-
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        this.flattenObject(value, newKey, result);
-      } else {
-        result[newKey] = value;
-      }
-    }
-    return result;
   }
 }

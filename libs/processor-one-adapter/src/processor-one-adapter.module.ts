@@ -1,11 +1,12 @@
 import { Logger, Module } from '@nestjs/common';
-import { SHA256SignatureVerificationService } from './services';
 import { ProcessorOneAdapter } from './adapters';
 import { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from './module.definition';
 import { IModuleOptions } from './interfaces';
 import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN } from './constants';
+import { SharedUtilitiesModule } from '@pemo-task/shared-utilities';
 
 @Module({
+  imports: [SharedUtilitiesModule],
   providers: [
     {
       provide: PROCESS_ONE_ADAPTER_LOGGER_TOKEN,
@@ -14,7 +15,6 @@ import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN } from './constants';
         options.logger ?? new Logger(ProcessorOneAdapterModule.name),
     },
     ProcessorOneAdapter,
-    SHA256SignatureVerificationService,
   ],
   exports: [ProcessorOneAdapter],
 })

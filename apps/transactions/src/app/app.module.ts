@@ -4,11 +4,16 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Transaction, TransactionEvent, Card } from './models';
 import { BullModule } from '@nestjs/bullmq';
-import { buildPinoOptions } from '@pemo-task/shared-config';
 import { LoggerModule } from 'nestjs-pino';
-
+import { APP_FILTER } from '@nestjs/core';
+import {
+  SharedUtilitiesModule,
+  GlobalExceptionFilter,
+  buildPinoOptions,
+} from '@pemo-task/shared-utilities';
 @Module({
   imports: [
+    SharedUtilitiesModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['../.env', '.env'],
@@ -48,6 +53,12 @@ import { LoggerModule } from 'nestjs-pino';
       },
     }),
     TransactionsModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
   ],
 })
 export class AppModule {}

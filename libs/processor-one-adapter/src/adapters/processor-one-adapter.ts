@@ -6,16 +6,27 @@ import {
   TransactionType,
 } from '@pemo-task/shared-types';
 import { ProcessorRequestData, processorRequestSchema } from '../schemas';
-import { SHA256SignatureVerificationService } from '../services';
 import { PROCESS_ONE_ADAPTER_LOGGER_TOKEN, PROCESSOR_ONE_ID } from '../constants';
 import { Inject, Logger } from '@nestjs/common';
+import {
+  extractSingleHeader,
+  flattenObject,
+  SignatureVerificationService,
+} from '@pemo-task/shared-utilities';
+import { MODULE_OPTIONS_TOKEN } from '../module.definition';
+import { IModuleOptions } from '../interfaces';
 
 @ProcessorAdapter(PROCESSOR_ONE_ID)
 export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestData> {
+  private readonly signaturePublicKey: string;
+
   constructor(
-    private readonly signatureVerificationService: SHA256SignatureVerificationService,
+    private readonly signatureVerificationService: SignatureVerificationService,
+    @Inject(MODULE_OPTIONS_TOKEN) private readonly options: IModuleOptions,
     @Inject(PROCESS_ONE_ADAPTER_LOGGER_TOKEN) private readonly logger: Logger,
-  ) {}
+  ) {
+    this.signaturePublicKey = Buffer.from(this.options.publicKeyBase64, 'base64').toString('utf8');
+  }
 
   validateAndParseTransaction(data: unknown) {
     const validatedResult = processorRequestSchema.safeParse(data);
@@ -43,7 +54,7 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
       type: validatedData.message_type,
       userId: validatedData.user_id,
       cardId: validatedData.card_id,
-      metadata: this.flattenObject(validatedData),
+      metadata: flattenObject(validatedData),
       authorizationTransactionId: authorizationTransactionId,
       clearingTransactionId:
         validatedData.message_type === TransactionType.CLEARING ? validatedData.id : undefined,
@@ -67,7 +78,7 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
    * any changes can be applied if requirements change
    */
   authorizeTransaction(data: ProcessorRequestData, headers: RequestHeaders) {
-    const signature = this.extractSignatureFromHeaders(headers);
+    const signature = extractSingleHeader(headers, 'x-message-signature');
 
     if (!signature) {
       return Result.error('Signature is required');
@@ -77,10 +88,12 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
 
     this.logger.debug(`Verifying signature for payload: ${payloadToSign}`);
 
-    const isSignatureValid = this.signatureVerificationService.verifySignature(
-      payloadToSign,
+    const isSignatureValid = this.signatureVerificationService.verifySignature({
+      data: payloadToSign,
       signature,
-    );
+      publicKey: this.signaturePublicKey,
+      algorithm: 'SHA256',
+    });
 
     if (!isSignatureValid) {
       return Result.error('Invalid signature');
@@ -110,31 +123,5 @@ export class ProcessorOneAdapter implements IProcessorAdapter<ProcessorRequestDa
    */
   private isSuccessfulTransaction(statusCode: string) {
     return statusCode === '0000';
-  }
-
-  private extractSignatureFromHeaders(headers: RequestHeaders) {
-    const signature = headers['x-message-signature'];
-
-    if (Array.isArray(signature)) {
-      return signature[0];
-    }
-
-    return signature;
-  }
-
-  //TODO: move to a shared utility function
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  flattenObject(obj: any, prefix = '', result: any = {}) {
-    for (const key in obj) {
-      const value = obj[key];
-      const newKey = prefix ? `${prefix}.${key}` : key;
-
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        this.flattenObject(value, newKey, result);
-      } else {
-        result[newKey] = value;
-      }
-    }
-    return result;
   }
 }

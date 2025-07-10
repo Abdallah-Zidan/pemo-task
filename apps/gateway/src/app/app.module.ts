@@ -2,13 +2,18 @@ import { Module } from '@nestjs/common';
 import { GatewayModule } from './gateway/gateway.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
-import { buildPinoOptions } from '@pemo-task/shared-config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import {
+  SharedUtilitiesModule,
+  GlobalExceptionFilter,
+  buildPinoOptions,
+} from '@pemo-task/shared-utilities';
 
 @Module({
   imports: [
+    SharedUtilitiesModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['../.env', '.env'],
@@ -47,6 +52,10 @@ import { APP_GUARD } from '@nestjs/core';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
     },
   ],
 })
