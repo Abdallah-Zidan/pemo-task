@@ -15,6 +15,8 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
+      stopAtFirstError: true,
+      forbidNonWhitelisted: false,
     }),
   );
 
