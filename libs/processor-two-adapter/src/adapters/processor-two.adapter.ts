@@ -1,4 +1,4 @@
-import { DecryptionService } from '../services';
+import { DecryptionService, SHA512SignatureVerificationService } from '../services';
 import { PROCESS_TWO_ADAPTER_LOGGER_TOKEN, PROCESSOR_TWO_ID } from '../constants';
 import { IProcessorAdapter, ProcessorAdapter } from '@pemo-task/process-adapter-manager';
 import {
@@ -15,7 +15,7 @@ import { Inject } from '@nestjs/common';
 import { MODULE_OPTIONS_TOKEN } from '../module.definition';
 import { IModuleOptions } from '../interfaces';
 import { ProcessorTransactionStatus, ProcessorTransactionType } from '../enums';
-import { processorRequestSchema } from '../schemas';
+import { ProcessorRequestData, processorRequestSchema } from '../schemas';
 
 @ProcessorAdapter(PROCESSOR_TWO_ID)
 export class ProcessorTwoAdapter implements IProcessorAdapter {
@@ -23,6 +23,7 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
     private readonly decryptionService: DecryptionService,
     @Inject(MODULE_OPTIONS_TOKEN) private readonly options: IModuleOptions,
     @Inject(PROCESS_TWO_ADAPTER_LOGGER_TOKEN) private readonly logger: ILogger,
+    private readonly signatureVerificationService: SHA512SignatureVerificationService,
   ) {}
   async validateAndParseTransaction(body: unknown): Promise<Result<ITransactionDetails, string[]>> {
     if (!hasProperty(body, 'data') || !isString(body.data)) {
@@ -68,17 +69,36 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
     });
   }
 
-  //! important note: this assumption ... just to show case different way of handling authorization
-  //! in the case of processor two as if we rely only on decryption of the data and api-key for authorization
-  authorizeTransaction(_: unknown, headers: RequestHeaders) {
+  //! important note: this is an assumption ... just to show case different way of handling authorization
+  //! in the case of processor two we have api key and signature verification
+  authorizeTransaction(data: ProcessorRequestData, headers: RequestHeaders) {
     const apiKey = headers['x-api-key'];
 
     if (apiKey !== this.options.apiKey) {
       return Result.error('Invalid API key');
     }
 
+    const signature = this.extractSignatureFromHeaders(headers);
+
+    if (!signature) {
+      return Result.error('Signature is required');
+    }
+
+    const payloadToSign = `${data.id}|${data.type}|${data.transaction.details.scheme_billing_amount}|${data.transaction.details.scheme_billing_currency}|${data.transaction.status}`;
+
+    this.logger.debug(`Verifying signature for payload: ${payloadToSign}`);
+
+    const isSignatureValid = this.signatureVerificationService.verifySignature(
+      payloadToSign,
+      signature,
+    );
+
+    if (!isSignatureValid) {
+      return Result.error('Invalid signature');
+    }
+
     return Result.success({
-      data: true,
+      isSignatureValid,
     });
   }
 
@@ -106,6 +126,16 @@ export class ProcessorTwoAdapter implements IProcessorAdapter {
     return (
       status === ProcessorTransactionStatus.POSTED || status === ProcessorTransactionStatus.PENDING
     );
+  }
+
+  private extractSignatureFromHeaders(headers: RequestHeaders) {
+    const signature = headers['x-message-signature'];
+
+    if (Array.isArray(signature)) {
+      return signature[0];
+    }
+
+    return signature;
   }
 
   //TODO: move to a shared utility function

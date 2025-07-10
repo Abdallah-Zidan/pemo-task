@@ -8,11 +8,9 @@ export class DecryptionService {
   private readonly privateKey: string;
 
   constructor(@Inject(MODULE_OPTIONS_TOKEN) private readonly options: IModuleOptions) {
-    if (!this.options.privateKeyBase64) {
-      throw new Error('Private key is required for decryption for Processor Two adapter');
-    }
-
-    this.privateKey = Buffer.from(this.options.privateKeyBase64, 'base64').toString('utf8');
+    this.privateKey = Buffer.from(this.options.decryptionPrivateKeyBase64, 'base64').toString(
+      'utf8',
+    );
   }
 
   decrypt(data: string): string {

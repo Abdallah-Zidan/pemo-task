@@ -3,7 +3,7 @@ import { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from './module.definiti
 import { PROCESS_TWO_ADAPTER_LOGGER_TOKEN } from './constants';
 import { IModuleOptions } from './interfaces';
 import { ProcessorTwoAdapter } from './adapters';
-import { DecryptionService } from './services';
+import { DecryptionService, SHA512SignatureVerificationService } from './services';
 
 @Module({
   providers: [
@@ -15,6 +15,7 @@ import { DecryptionService } from './services';
     },
     ProcessorTwoAdapter,
     DecryptionService,
+    SHA512SignatureVerificationService,
   ],
   exports: [ProcessorTwoAdapter],
 })
