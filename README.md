@@ -18,14 +18,12 @@ pemo-task/
 ├── apps/
 │   ├── gateway/              # API Gateway service
 │   ├── transactions/         # Core transaction processing service
-│   └── gateway-e2e/          # End-to-end tests
 ├── libs/
 │   ├── shared-types/         # Common types and interfaces
 │   ├── processor-adapter-manager/ # Adapter management system
 │   ├── processor-one-adapter/    # First payment processor adapter
 │   └── processor-two-adapter/    # Second payment processor adapter
 ├── shared-proto/             # Protocol buffer definitions
-└── scratches/               # Development utilities
 ```
 
 ## 🚀 Features
@@ -49,7 +47,6 @@ pemo-task/
 - **TypeScript**: Full type safety across the entire system
 - **Nx Monorepo**: Efficient development and build tooling
 - **Modular Architecture**: Reusable libraries and services
-- **Comprehensive Testing**: Unit and integration tests
 - **ESLint & Prettier**: Code quality and formatting
 
 ## 🛠️ Technology Stack
@@ -63,7 +60,6 @@ pemo-task/
 - **Validation**: Zod + class-validator
 - **Testing**: Jest
 - **Build Tool**: Nx
-- **Container**: Docker support
 
 ## 🏃‍♂️ Quick Start
 
@@ -90,14 +86,15 @@ pnpm install
 3. Set up environment variables:
 ```bash
 cp .env.example .env
+cd apps/transactions && cp .env.example .env
+cd ../gateway && cp .env.example .env
 # Edit .env with your configuration
 ```
 
 4. Set up the database:
 ```bash
 # Run database migrations
-cd apps/transactions
-npx sequelize-cli db:migrate
+nx db:migrate transactions
 ```
 
 5. Start the development servers:
@@ -107,6 +104,9 @@ npx nx serve gateway
 
 # Start the transactions service
 npx nx serve transactions
+
+# start both services in parallel 
+npx nx run-many --target=serve --parallel=true
 ```
 
 ## 🔧 Development
@@ -115,8 +115,8 @@ npx nx serve transactions
 
 ```bash
 # Development mode
-npx nx serve gateway          # Gateway service (port 3000)
-npx nx serve transactions     # Transactions service (port 3001)
+npx nx serve gateway         
+npx nx serve transactions     
 
 # Production build
 npx nx build gateway
@@ -134,9 +134,8 @@ npx nx test gateway
 npx nx test transactions
 npx nx test shared-types
 npx nx test processor-adapter-manager
-
-# Run e2e tests
-npx nx test gateway-e2e
+npx nx test processor-one-adapter
+npx nx test processor-two-adapter
 ```
 
 ### Code Quality
@@ -268,8 +267,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/pemo_task
 REDIS_URL=redis://localhost:6379
 
 # Service URLs
-GATEWAY_URL=http://localhost:3000
-TRANSACTIONS_URL=http://localhost:3001
+TRANSACTIONS_GRPC_URL=http://localhost:50051
 
 # Processor Configuration
 PROCESSOR_ONE_SECRET=your-secret-key
@@ -280,8 +278,6 @@ PROCESSOR_TWO_SECRET=your-secret-key
 
 - **Health Checks**: Built-in health check endpoints
 - **Logging**: Structured logging with configurable levels
-- **Metrics**: Application metrics and performance monitoring
-- **Error Tracking**: Comprehensive error handling and reporting
 
 ## 🧪 Testing Strategy
 
@@ -290,15 +286,6 @@ PROCESSOR_TWO_SECRET=your-secret-key
 - Adapter testing
 - Utility function testing
 
-### Integration Tests
-- Database integration
-- Queue processing
-- Inter-service communication
-
-### End-to-End Tests
-- Complete workflow testing
-- API endpoint testing
-- Error scenario testing
 
 ## 🔐 Security
 
@@ -315,37 +302,3 @@ PROCESSOR_TWO_SECRET=your-secret-key
 - [ ] API rate limiting and throttling
 - [ ] Comprehensive logging and audit trails
 - [ ] Performance optimization and caching
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Make your changes and add tests
-4. Ensure all tests pass: `npx nx test`
-5. Commit your changes: `git commit -m 'Add my feature'`
-6. Push to the branch: `git push origin feature/my-feature`
-7. Submit a pull request
-
-### Development Guidelines
-
-- Follow TypeScript best practices
-- Write comprehensive tests
-- Update documentation for new features
-- Follow the existing code style
-- Use conventional commit messages
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📞 Support
-
-For questions or support:
-
-- Create an issue in the repository
-- Check the documentation in individual library README files
-- Review the code examples and tests
-
----
-
-Built with ❤️ using [NestJS](https://nestjs.com/) and [Nx](https://nx.dev/)

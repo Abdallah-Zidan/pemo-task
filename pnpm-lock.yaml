@@ -65,6 +65,9 @@ importers:
       pg-hstore:
         specifier: ^2.3.4
         version: 2.3.4
+      pino-http:
+        specifier: ^10.5.0
+        version: 10.5.0
       pino-pretty:
         specifier: ^13.0.0
         version: 13.0.0

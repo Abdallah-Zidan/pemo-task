@@ -4,12 +4,19 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Transaction, TransactionEvent, Card } from './models';
 import { BullModule } from '@nestjs/bullmq';
+import { buildPinoOptions } from '@pemo-task/shared-config';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['../.env', '.env'],
+    }),
+
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => buildPinoOptions(config),
     }),
 
     BullModule.forRootAsync({

@@ -21,7 +21,12 @@ import { ProcessorTwoAdapterModule } from '@pemo-task/processor-two-adapter';
     }),
     ProcessorTwoAdapterModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
-        privateKeyBase64: configService.getOrThrow('PROCESSOR_TWO_PRIVATE_KEY_BASE64'),
+        decryptionPrivateKeyBase64: configService.getOrThrow(
+          'PROCESSOR_TWO_DECRYPTION_PRIVATE_KEY_BASE64',
+        ),
+        signatureVerificationPublicKeyBase64: configService.getOrThrow(
+          'PROCESSOR_TWO_SIGNATURE_VERIFICATION_PUBLIC_KEY_BASE64',
+        ),
         apiKey: configService.getOrThrow('PROCESSOR_TWO_API_KEY'),
         logger: new Logger(ProcessorTwoAdapterModule.name),
       }),
@@ -34,7 +39,7 @@ import { ProcessorTwoAdapterModule } from '@pemo-task/processor-two-adapter';
           useFactory: (configService: ConfigService) => ({
             transport: Transport.GRPC,
             options: {
-              url: configService.getOrThrow('TRANSACTIONS_SERVICE_URL'),
+              url: configService.getOrThrow('TRANSACTIONS_GRPC_URL'),
               package: 'transactions',
               protoPath: join(__dirname, '../../../shared-proto/proto/transactions.proto'),
             },

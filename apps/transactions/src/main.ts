@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
@@ -10,7 +10,10 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  const transactionsServiceUrl = configService.get('TRANSACTIONS_SERVICE_URL');
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
+  const transactionsServiceUrl = configService.get('TRANSACTIONS_GRPC_URL');
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
@@ -24,8 +27,8 @@ async function bootstrap() {
   await app.startAllMicroservices();
   await app.init(); //! This is important for BullMQ workers
 
-  Logger.log(`🚀 gRPC microservice is running`);
-  Logger.log(`🚀 BullMQ workers are running`);
+  logger.log(`🚀 gRPC microservice is running`);
+  logger.log(`🚀 BullMQ workers are running`);
 }
 
 bootstrap();
