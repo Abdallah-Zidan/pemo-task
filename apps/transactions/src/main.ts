@@ -19,7 +19,7 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'transactions',
-      protoPath: join(__dirname, '../../../shared-proto/proto/transactions.proto'),
+      protoPath: join(__dirname, '../shared-proto/proto/transactions.proto'),
       url: transactionsServiceUrl,
     },
   });

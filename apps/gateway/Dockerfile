@@ -7,7 +7,6 @@ RUN npm install -g pnpm
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-COPY apps/gateway/package.json ./apps/gateway/
 RUN pnpm install --frozen-lockfile
 
 # Build the app
@@ -28,9 +27,10 @@ RUN adduser --system --uid 1001 nestjs
 
 COPY --from=builder /app/dist/apps/gateway ./
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/shared-proto ../shared-proto
 
 USER nestjs
 
-EXPOSE 3000
+EXPOSE 3009
 
 CMD ["node", "main.js"]

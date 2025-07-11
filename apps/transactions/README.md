@@ -158,6 +158,23 @@ CREATE TABLE transaction_events (
 );
 ```
 
+#### Pending Clearing Transactions Table
+```sql
+CREATE TABLE pending_clearing_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  processor_id VARCHAR(255) NOT NULL,
+  transaction_correlation_id VARCHAR(255) NOT NULL,
+  transaction_data JSONB NOT NULL,
+  retry_count INTEGER DEFAULT 0,
+  last_retry_at TIMESTAMP,
+  expires_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  
+  UNIQUE(transaction_correlation_id, processor_id)
+);
+```
+
 ### Database Migrations
 
 ```bash
@@ -292,12 +309,62 @@ npx nx test transactions
 
 1. **Request Reception**: Receive clearing data via gRPC
 2. **Transaction Lookup**: Find corresponding authorization transaction
-3. **Validation**: Validate clearing amount and transaction state
-4. **Update**: Update transaction with clearing information
-5. **Event Emission**: Emit clearing event for async processing
-6. **Balance Update**: Update card settled and pending balances
-7. **Analytics**: Send analytics event for reporting
-8. **Completion**: Mark transaction as settled
+3. **Out-of-Order Handling**: If authorization not found, store as pending clearing transaction
+4. **Validation**: Validate clearing amount and transaction state
+5. **Update**: Update transaction with clearing information
+6. **Event Emission**: Emit clearing event for async processing
+7. **Balance Update**: Update card settled and pending balances
+8. **Analytics**: Send analytics event for reporting
+9. **Completion**: Mark transaction as settled
+
+#### Out-of-Order Transaction Processing
+
+The system handles the critical edge case where clearing transactions arrive before their corresponding authorization transactions:
+
+**Problem**: In distributed payment processing systems, transaction ordering cannot be guaranteed. Clearing transactions may arrive before authorization transactions, causing processing failures.
+
+**Solution**: Pending Clearing Transaction mechanism that:
+
+1. **Stores Orphaned Clearings**: When a clearing transaction arrives without a corresponding authorization, it's stored in the `pending_clearing_transactions` table
+2. **Automatic Processing**: When the authorization transaction arrives, the system automatically processes any pending clearing transactions for that correlation ID
+3. **Expiration Handling**: Pending clearing transactions expire after 24 hours and are automatically cleaned up
+4. **Retry Logic**: Failed processing attempts are tracked with retry counts
+
+**Implementation Details**:
+```typescript
+// When clearing arrives before authorization
+if (!pendingTransaction) {
+  await this.storePendingClearingTransaction(data, t);
+  return; // Don't throw error, store for later
+}
+
+// When authorization is processed, check for pending clearings
+setImmediate(async () => {
+  await this.processPendingClearingTransactions(
+    data.transactionCorrelationId,
+    data.processorId,
+  );
+});
+```
+
+**Database Schema**:
+```sql
+CREATE TABLE pending_clearing_transactions (
+  id UUID PRIMARY KEY,
+  processor_id VARCHAR(255) NOT NULL,
+  transaction_correlation_id VARCHAR(255) NOT NULL,
+  transaction_data JSONB NOT NULL,
+  retry_count INTEGER DEFAULT 0,
+  last_retry_at TIMESTAMP,
+  expires_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  
+  UNIQUE(transaction_correlation_id, processor_id)
+);
+```
+
+**Background Cleanup**: A scheduled job runs every hour to remove expired pending clearing transactions, preventing storage bloat and maintaining system performance.
 
 ## 📊 Event Processing
 
