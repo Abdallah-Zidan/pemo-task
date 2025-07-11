@@ -5,87 +5,91 @@
 ```mermaid
 classDiagram
 direction TB
-    class GatewayController {
-	    -gatewayService: GatewayService
-	    +handleWebhook(processorId: string, body: unknown, headers: RequestHeaders): Promise~ProcessResponse~
-	    +getTransactions(query: GetTransactionsQuery) : Promise~TransactionsResponse~
-    }
 
-    class GatewayService {
-	    -transactionProcessingService: TransactionProcessingService 
-	    -transactionQueryService: TransactionQueryService
-	    +handleWebhook(processorId: string, data: unknown, headers: RequestHeaders) : Promise~ProcessResult~
-	    +getTransactions(query: GetTransactionsQuery) : Result~TransactionsResult~
-    }
+class GatewayController {
+    - gatewayService: GatewayService
+    + handleWebhook(processorId: string, body: unknown, headers: RequestHeaders)
+    + getTransactions(query: GetTransactionsQuery)
+}
 
-    class TransactionQueryService {
-	    -transactionsClient: ClientGrpc
-	    +getTransactions(query: GetTransactionsQuery) : Promise~TransactionsResult~
-    }
+class GatewayService {
+    - transactionProcessingService: TransactionProcessingService 
+    - transactionQueryService: TransactionQueryService
+    + handleWebhook(processorId: string, data: unknown, headers: RequestHeaders)
+    + getTransactions(query: GetTransactionsQuery)
+}
 
-    class TransactionProcessingService {
-        -processorAdapterManager: ProcessorAdapterManager
-        -transactionsClient: ClientGrpc
-        -validateAndParseTransaction(processorId: string, body: unknown): Promise~ITransactionDetails~
-        -authorizeTransaction(processorId: string, data: unknown, headers: RequestHeaders): Promise~any~
-        +processTransaction(processorId: string, body: unknown, headers: RequestHeaders):Promise~ProcessResult~
-    }
-    
-    class ProcessorAdapterManager {
-	    -adapters: Map
-	    +getProcessorAdapter(processorId: string) : Promise~IProcessorAdapter~
-        +getProcessorAdapterOrThrow(processorId: string) : Promise~IProcessorAdapter~
-	    +getProcessorIds():Promise~string[]~
-        -discoverProcessorAdapters():Promise~any~
-	    -validateProcessorAdapter(instance: unknown, processorId: string) : Promise~any~
-	    -validateHasMethods() : void
-    }
+class TransactionQueryService {
+    - transactionsClient: ClientGrpc
+    + getTransactions(query: GetTransactionsQuery)
+}
 
-    class IProcessorAdapter {
-	    +validateAndParseTransaction(data: unknown) : Promise~Result~
-	    +authorizeTransaction(data: unknown, headers: RequestHeaders) : Promise~Result~
-    }
+class TransactionProcessingService {
+    - processorAdapterManager: ProcessorAdapterManager
+    - transactionsClient: ClientGrpc
+    - validateAndParseTransaction(processorId: string, body: unknown)
+    - authorizeTransaction(processorId: string, data: unknown, headers: RequestHeaders)
+    + processTransaction(processorId: string, body: unknown, headers: RequestHeaders)
+}
 
-    class ProcessorOneAdapter {
-	    -signatureService: SignatureVerificationService
-	    +validateAndParseTransaction(data: unknown) : Promise~Result~
-	    +authorizeTransaction(data: unknown, headers: RequestHeaders) : Promise~Result~
-    }
+class ProcessorAdapterManager {
+    - adapters: Map
+    + getProcessorAdapter(processorId: string)
+    + getProcessorAdapterOrThrow(processorId: string)
+    + getProcessorIds()
+    - discoverProcessorAdapters()
+    - validateProcessorAdapter(instance: unknown, processorId: string)
+    - validateHasMethods()
+}
 
-    class ProcessorTwoAdapter {
-	    -decryptionService: DecryptionService
-	    +validateAndParseTransaction(data: unknown) : Promise~Result~
-	    +authorizeTransaction(data: unknown, headers: RequestHeaders) : Promise~Result~
-    }
+class IProcessorAdapter {
+    + validateAndParseTransaction(data: unknown)
+    + authorizeTransaction(data: unknown, headers: RequestHeaders)
+}
 
-    class SignatureVerificationService {
-	    +verifySignature(data: string, signature: string, publicKey: string, algorithm: string) : Promise~boolean~
-    }
+class ProcessorOneAdapter {
+    - signatureService: SignatureVerificationService
+    + validateAndParseTransaction(data: unknown)
+    + authorizeTransaction(data: unknown, headers: RequestHeaders)
+}
 
-    class DecryptionService {
-	    +privateDecrypt(encryptedData: string, privateKey: string) : Promise~string~
-    }
+class ProcessorTwoAdapter {
+    - decryptionService: DecryptionService
+    + validateAndParseTransaction(data: unknown)
+    + authorizeTransaction(data: unknown, headers: RequestHeaders)
+}
 
-    class ClientGrpc {
+class SignatureVerificationService {
+    + verifySignature(data: string, signature: string, publicKey: string, algorithm: string)
+}
 
-    }
+class DecryptionService {
+    + privateDecrypt(encryptedData: string, privateKey: string)
+}
 
-   
-	<<interface>> IProcessorAdapter
-	<<interface>> ITransactionDetails
-    
-    GatewayController --> GatewayService
-    GatewayService --> TransactionQueryService
-    GatewayService --> TransactionProcessingService
-    TransactionProcessingService --> ProcessorAdapterManager
-    TransactionProcessingService --> ClientGrpc
-    TransactionQueryService --> ClientGrpc
-    ProcessorAdapterManager --> IProcessorAdapter
-    ProcessorOneAdapter ..|> IProcessorAdapter
-    ProcessorTwoAdapter ..|> IProcessorAdapter
-    ProcessorOneAdapter --> SignatureVerificationService
-    ProcessorTwoAdapter --> DecryptionService
-    ProcessorTwoAdapter --> SignatureVerificationService
+class ClientGrpc {
+    # placeholder
+}
+
+class ITransactionDetails {
+    # placeholder
+}
+
+<<interface>> IProcessorAdapter
+<<interface>> ITransactionDetails
+
+GatewayController --> GatewayService
+GatewayService --> TransactionQueryService
+GatewayService --> TransactionProcessingService
+TransactionProcessingService --> ProcessorAdapterManager
+TransactionProcessingService --> ClientGrpc
+TransactionQueryService --> ClientGrpc
+ProcessorAdapterManager --> IProcessorAdapter
+ProcessorOneAdapter ..|> IProcessorAdapter
+ProcessorTwoAdapter ..|> IProcessorAdapter
+ProcessorOneAdapter --> SignatureVerificationService
+ProcessorTwoAdapter --> DecryptionService
+ProcessorTwoAdapter --> SignatureVerificationService
 ```
 
 ## Transaction Service Class Diagram
