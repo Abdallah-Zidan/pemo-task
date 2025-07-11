@@ -1,4 +1,4 @@
-# PEMO Payment Processing System - Class Diagrams
+# PEMO Processing System - Class Diagrams
 
 ## Gateway Service Class Diagram
 
@@ -188,8 +188,9 @@ classDiagram
 
 ```
 
-## Transaction service class diagram
-This comprehensive class diagram documentation provides a detailed view of the PEMO payment processing system's class structure, including:
+---
+
+This class diagram documentation provides a detailed view of the PEMO processing system's class structure, including:
 
 1. **Gateway System Classes**: Main controllers, services, and their relationships
 2. **Transaction System Classes**: Main controllers, services, and their relationships
