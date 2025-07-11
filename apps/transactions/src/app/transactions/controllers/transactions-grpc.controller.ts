@@ -1,14 +1,15 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { IGetTransactionsRequest, ITransactionDetails } from '@pemo-task/shared-types';
 import { TransactionsGrpcService } from '../services';
 
 @Controller()
 export class TransactionsGrpcController {
+  private readonly logger = new Logger(TransactionsGrpcController.name);
   constructor(private readonly transactionsGrpcService: TransactionsGrpcService) {}
   @GrpcMethod('TransactionsService', 'ProcessTransaction')
   async processTransaction(data: ITransactionDetails) {
-    console.log('Received gRPC request with metadata:', JSON.stringify(data.metadata));
+    this.logger.debug('Received gRPC request with metadata: %o', data.metadata);
     return this.transactionsGrpcService.processTransaction(data);
   }
 

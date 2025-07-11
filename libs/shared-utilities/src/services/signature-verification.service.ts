@@ -19,7 +19,7 @@ export class SignatureVerificationService {
       verifier.update(data);
       verifier.end();
       return verifier.verify(publicKey, signature, 'base64');
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -28,12 +28,18 @@ npm install @pemo-task/shared-types
 ```typescript
 import {
   ITransactionDetails,
+  ITransactionDetailsResponse,
+  IGetTransactionResponse,
+  IGetTransactionsRequest,
   TransactionStatus,
   TransactionType,
   TransactionEventType,
   Result,
   RequestHeaders,
-  ILogger
+  ILogger,
+  hasProperty,
+  isObject,
+  isString
 } from '@pemo-task/shared-types';
 ```
 
@@ -165,20 +171,40 @@ function extractAuthToken(headers: RequestHeaders): string | undefined {
 }
 ```
 
-### Utility Functions
+### Type Predicates and Utility Functions
 
-Use the provided utility functions:
+Use the provided type guards and utility functions:
 
 ```typescript
-import { isObject } from '@pemo-task/shared-types';
+import { isObject, isString, hasProperty } from '@pemo-task/shared-types';
 
-function validateInput(data: unknown): boolean {
+function validateWebhookData(data: unknown): boolean {
+  // Check if data is an object
   if (!isObject(data)) {
     return false;
   }
   
-  // Additional validation logic
+  // Check if required properties exist
+  if (!hasProperty(data, 'id') || !hasProperty(data, 'amount')) {
+    return false;
+  }
+  
+  // Type-safe access to properties
+  if (!isString(data.id)) {
+    return false;
+  }
+  
   return true;
+}
+
+// Advanced usage with type guards
+function processTransactionData(payload: unknown) {
+  if (hasProperty(payload, 'transaction') && isObject(payload.transaction)) {
+    // TypeScript now knows payload.transaction exists and is an object
+    if (hasProperty(payload.transaction, 'id') && isString(payload.transaction.id)) {
+      console.log('Transaction ID:', payload.transaction.id);
+    }
+  }
 }
 ```
 
@@ -282,7 +308,7 @@ Type for HTTP request headers.
 type RequestHeaders = Record<string, string | string[] | undefined>
 ```
 
-### Utility Functions
+### Type Predicates and Utility Functions
 
 #### isObject(value: unknown): value is object
 
@@ -293,6 +319,35 @@ Type guard function to check if a value is an object.
 
 **Returns:**
 - `boolean` - True if value is an object, false otherwise
+
+#### isString(value: unknown): value is string
+
+Type guard function to check if a value is a string.
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:**
+- `boolean` - True if value is a string, false otherwise
+
+#### hasProperty<T extends object, K extends string>(obj: unknown, key: K): obj is T & Record<K, unknown>
+
+Type guard function to check if an object has a specific property.
+
+**Parameters:**
+- `obj: unknown` - Object to check
+- `key: K` - Property key to check for
+
+**Returns:**
+- `boolean` - True if object has the property, false otherwise
+
+**Example:**
+```typescript
+if (hasProperty(data, 'id')) {
+  // TypeScript now knows data.id exists
+  console.log(data.id);
+}
+```
 
 ## Examples
 
@@ -305,7 +360,9 @@ import {
   TransactionStatus,
   Result,
   RequestHeaders,
-  isObject
+  isObject,
+  hasProperty,
+  isString
 } from '@pemo-task/shared-types';
 
 class PaymentProcessor {
@@ -319,7 +376,16 @@ class PaymentProcessor {
       return Result.error(['Invalid transaction data format']);
     }
     
-    // Validation logic here
+    // Validate required properties exist
+    if (!hasProperty(data, 'id') || !isString(data.id)) {
+      errors.push('Missing or invalid transaction ID');
+    }
+    
+    if (!hasProperty(data, 'amount') || typeof data.amount !== 'number') {
+      errors.push('Missing or invalid amount');
+    }
+    
+    // Additional validation logic here
     
     if (errors.length > 0) {
       return Result.error(errors);

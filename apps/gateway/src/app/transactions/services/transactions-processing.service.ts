@@ -36,7 +36,9 @@ export class TransactionsProcessingService {
         'transaction is not successful, skipping processing for processor: %s',
         processorId,
       );
-      return;
+      return {
+        success: false,
+      };
     }
 
     await this.authorizeTransaction(processorId, body, headers);
@@ -45,12 +47,10 @@ export class TransactionsProcessingService {
       ...validatedData,
       metadata: validatedData.metadata,
     };
-    
+
     this.logger.debug('Sending gRPC request with metadata:', JSON.stringify(requestData.metadata));
-    
-    return firstValueFrom(
-      this.transactionsGrpcService.ProcessTransaction(requestData),
-    );
+
+    return firstValueFrom(this.transactionsGrpcService.ProcessTransaction(requestData));
   }
 
   private async validateAndParseTransaction(processorId: string, body: unknown) {

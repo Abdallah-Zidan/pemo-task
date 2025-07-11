@@ -16,12 +16,15 @@ export class GatewayController {
   })
   @HttpCode(202)
   @Post('webhook/:processorId')
-  handleWebhook(
+  async handleWebhook(
     @Param('processorId') processorId: string,
     @Body() body: unknown,
     @Headers() headers: RequestHeaders,
   ) {
-    return this.gatewayService.handleWebhook(processorId, body, headers);
+    const result = await this.gatewayService.handleWebhook(processorId, body, headers);
+    return {
+      data: result,
+    };
   }
 
   @ApiOperation({ summary: 'Get transactions' })

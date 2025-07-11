@@ -13,9 +13,9 @@ export class ClearingEventHandler {
   private readonly logger = new Logger(ClearingEventHandler.name);
 
   constructor(
-    @InjectModel(Card) private cardModel: typeof Card,
-    @InjectModel(TransactionEvent) private transactionEventModel: typeof TransactionEvent,
-    private sequelize: Sequelize,
+    @InjectModel(Card) private readonly cardModel: typeof Card,
+    @InjectModel(TransactionEvent) private readonly transactionEventModel: typeof TransactionEvent,
+    private readonly sequelize: Sequelize,
   ) {}
 
   @OnEvent(`transaction.${TransactionType.CLEARING}`)
