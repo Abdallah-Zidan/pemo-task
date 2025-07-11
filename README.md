@@ -138,10 +138,10 @@ DB_PASSWORD=your_db_password
 DB_NAME=pemo_task
 
 # Redis Configuration
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://redis:6379
 
 # Service Configuration
-TRANSACTIONS_GRPC_URL=0.0.0.0:50052
+TRANSACTIONS_GRPC_URL=transactions:3001
 NODE_ENV=development
 GATEWAY_PORT=3000
 
@@ -267,10 +267,6 @@ For complete API documentation with request/response schemas, see [API Documenta
 ```bash
 # Build and run with Docker Compose
 docker-compose up -d
-
-# Build individual services
-docker build -t pemo-gateway -f apps/gateway/Dockerfile .
-docker build -t pemo-transactions -f apps/transactions/Dockerfile .
 ```
 
 ### Production Environment

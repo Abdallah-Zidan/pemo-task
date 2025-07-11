@@ -111,7 +111,7 @@ src/
 
 #### Process Webhook
 ```http
-POST /webhook/{processorId}
+POST /gateway/webhook/{processorId}
 Content-Type: application/json
 X-Signature: sha256=<signature>
 X-Timestamp: <timestamp>

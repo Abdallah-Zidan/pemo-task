@@ -31,6 +31,6 @@ COPY --from=builder /app/shared-proto ../shared-proto
 
 USER nestjs
 
-EXPOSE 3009
+EXPOSE 3000
 
 CMD ["node", "main.js"]

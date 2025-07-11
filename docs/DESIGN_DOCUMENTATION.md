@@ -417,9 +417,9 @@ export class ProcessorAdapterManager {
 
 ```typescript
 // Gateway Service Endpoints
-POST /webhook/{processorId}     // Process processor webhook
-GET  /transactions              // Query transactions
-GET  /health                    // Health check
+POST /gateway/webhook/{processorId}     // Process processor webhook
+GET  /gateway/transactions              // Query transactions
+GET  /gateway/health                    // Health check
 
 // Transaction Service (gRPC)
 rpc ProcessTransaction(TransactionRequest) returns (TransactionResponse)

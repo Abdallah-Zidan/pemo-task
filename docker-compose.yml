@@ -32,10 +32,10 @@ services:
       context: .
       dockerfile: apps/gateway/Dockerfile
     restart: unless-stopped
-    ports:
-      - '3009:3009'
     env_file:
       - .env
+    ports:
+      - '${GATEWAY_PORT}:${GATEWAY_PORT}'
     environment:
       - TRANSACTIONS_GRPC_URL=transactions:3001
     depends_on:

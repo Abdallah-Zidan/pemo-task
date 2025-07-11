@@ -105,7 +105,7 @@ Receives and processes webhooks from payment processors.
 
 ```http
 
-POST /webhook/{processorId}
+POST /gateway/webhook/{processorId}
 
 ```
 
