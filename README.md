@@ -1,6 +1,6 @@
-# PEMO Task - Payment Processing System
+# PEMO Task - Transaction Processing System
 
-A scalable payment processing system built with NestJS and Nx monorepo, designed to handle multi-processor payment transactions through pluggable adapters with event-driven architecture, background queue processing, and secure microservices communication.
+A scalable transaction processing system built with NestJS and Nx monorepo, designed to handle multi-processor transactions through pluggable adapters with event-driven architecture, background queue processing, and secure microservices communication.
 
 ## 📋 Table of Contents
 
@@ -14,10 +14,10 @@ A scalable payment processing system built with NestJS and Nx monorepo, designed
 
 ## 🏗️ System Overview
 
-PEMO Task implements a comprehensive payment processing system that handles authorization and clearing transactions from multiple payment processors. The system uses a microservices architecture with the following key components:
+PEMO Task implements a comprehensive transaction processing system that handles authorization and clearing transactions from multiple payment processors. The system uses a microservices architecture with the following key components:
 
 ### Core Services
-- **Gateway Service** (Port 3000): HTTP API gateway for external webhooks and transaction queries
+- **Gateway Service** (Port from environment variable): HTTP API gateway for external webhooks and transaction queries
 - **Transactions Service** (gRPC): Internal microservice for transaction processing and data persistence
 
 ### Shared Libraries
@@ -45,7 +45,12 @@ Comprehensive documentation is available in the `docs/` directory:
 ### Service Documentation
 - **[Gateway Service](apps/gateway/README.md)** - API gateway implementation details
 - **[Transactions Service](apps/transactions/README.md)** - Core transaction processing service
+  
 - **[Shared Utilities](libs/shared-utilities/README.md)** - Common utilities and security services
+- **[Shared Types](libs/shared-types/README.md)** - Common interfaces, enums, and type definitions
+- **[Processor Adapter Manager](libs/processor-adapter-manager/README.md)** - Processor adapter manager implementation details
+- **[Processor One Adapter](libs/processor-one-adapter/README.md)** - Processor one adapter implementation details
+- **[Processor Two Adapter](libs/processor-two-adapter/README.md)** - Processor two adapter implementation details
 
 ## 🚀 Key Features
 
@@ -96,8 +101,7 @@ cp .env.example .env
 ```bash
 # Start PostgreSQL and Redis services
 # Run database migrations
-cd apps/transactions
-npx sequelize-cli db:migrate
+nx db:migrate transactions
 ```
 
 4. **Start Services**:
@@ -106,8 +110,8 @@ npx sequelize-cli db:migrate
 npx nx run-many --target=serve --projects=gateway,transactions --parallel=true
 
 # Or start individually
-npx nx serve gateway      # Port 3000
-npx nx serve transactions # gRPC port from TRANSACTIONS_GRPC_URL
+npx nx serve gateway      
+npx nx serve transactions 
 ```
 
 5. **Verify Installation**:
@@ -219,7 +223,6 @@ npx nx run-many --target=typecheck
 ```http
 POST /gateway/webhook/{processorId}
 Content-Type: application/json
-Authorization: Bearer <processor-specific-auth>
 
 # Process payment processor webhooks
 # Returns: 202 Accepted (async processing)
@@ -228,7 +231,7 @@ Authorization: Bearer <processor-specific-auth>
 #### Transaction Query
 ```http
 GET /gateway/transactions?page=1&limit=10&status=PENDING
-Authorization: Bearer <auth-token>
+
 
 # Query transactions with pagination and filtering
 # Returns: Paginated transaction list
@@ -289,8 +292,7 @@ node dist/apps/transactions/main.js
 
 ```bash
 # Run migrations before deployment
-cd apps/transactions
-NODE_ENV=production npx sequelize-cli db:migrate
+nx db:migrate transactions 
 ```
 
 ## 🔧 System Architecture
@@ -314,6 +316,7 @@ NODE_ENV=production npx sequelize-cli db:migrate
 - JSONB metadata for processor-specific fields
 
 **Cards Table**:
+- Unique constraint on `[card_id]`
 - Real-time credit utilization tracking
 - Race condition protection with database locks
 - Automatic card creation on first transaction
@@ -324,7 +327,7 @@ NODE_ENV=production npx sequelize-cli db:migrate
 
 ## 🔐 Security Features
 
-- **Webhook Security**: SHA256/RSA signature verification for all processors
+- **Webhook Security**: signature verification for all processors
 - **Rate Limiting**: Redis-backed throttling with configurable limits
 - **Input Validation**: Comprehensive request validation with Zod schemas
 - **Type Safety**: Full TypeScript coverage for compile-time safety
