@@ -70,7 +70,7 @@ classDiagram
     %% Job Processors
     class TransactionJobProcessor {
         -transactionService: TransactionService
-        +processTransaction(job: Job~ITransactionDetails~): Promise~void~
+        +processTransaction(job: Job): Promise~void~
         -handleJobFailure(job: Job, error: Error): Promise~void~
         -validateJobData(data: ITransactionDetails): boolean
     }
@@ -87,16 +87,16 @@ classDiagram
     %% Interfaces
     class IProcessorAdapter {
         <<interface>>
-        +validateAndParseTransaction(data: unknown): Promise~Result~ITransactionDetails, string[]~~
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~unknown, string~~
+        +validateAndParseTransaction(data: unknown): Promise~Result~
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
     }
 
     %% Concrete Adapters
     class ProcessorOneAdapter {
         -signatureService: SignatureVerificationService
         -schema: ZodSchema
-        +validateAndParseTransaction(data: unknown): Promise~Result~ITransactionDetails, string[]~~
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~unknown, string~~
+        +validateAndParseTransaction(data: unknown): Promise~Result~
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
         -validateSignature(data: string, signature: string): Promise~boolean~
         -parseProcessorOneData(data: unknown): ITransactionDetails
     }
@@ -104,8 +104,8 @@ classDiagram
     class ProcessorTwoAdapter {
         -decryptionService: DecryptionService
         -schema: ZodSchema
-        +validateAndParseTransaction(data: unknown): Promise~Result~ITransactionDetails, string[]~~
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~unknown, string~~
+        +validateAndParseTransaction(data: unknown): Promise~Result~
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
         -decryptPayload(data: string): Promise~string~
         -parseProcessorTwoData(data: unknown): ITransactionDetails
     }
@@ -174,7 +174,7 @@ classDiagram
         +updatedAt: Date
         +events: TransactionEvent[]
         +toJSON(): object
-        +update(values: Partial~Transaction~): Promise~Transaction~
+        +update(values: object): Promise~Transaction~
     }
 
     class Card {
@@ -265,11 +265,11 @@ classDiagram
         +limit: number
     }
 
-    class Result~T, E~ {
+    class Result {
         <<generic>>
         +success: boolean
-        +data?: T
-        +error?: E
+        +data: any
+        +error: any
     }
 
     %% Relationships
@@ -292,8 +292,8 @@ classDiagram
     %% Core Adapter Interface
     class IProcessorAdapter {
         <<interface>>
-        +validateAndParseTransaction(data: unknown): Promise~Result~ITransactionDetails, string[]~~
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~unknown, string~~
+        +validateAndParseTransaction(data: unknown): Promise~Result~
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
     }
 
     %% Abstract Base Adapter
@@ -302,8 +302,8 @@ classDiagram
         #logger: Logger
         #validateCommonFields(data: unknown): Result~boolean, string[]~
         #parseCommonData(data: unknown): Partial~ITransactionDetails~
-        +validateAndParseTransaction(data: unknown): Promise~Result~ITransactionDetails, string[]~~*
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~unknown, string~~*
+        +validateAndParseTransaction(data: unknown): Promise~Result~*
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~*
     }
 
     %% Processor One Adapter
@@ -311,8 +311,8 @@ classDiagram
         -signatureService: SignatureVerificationService
         -schema: ProcessorOneSchema
         -moduleOptions: IProcessorOneModuleOptions
-        +validateAndParseTransaction(data: unknown): Promise~Result~ITransactionDetails, string[]~~
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~unknown, string~~
+        +validateAndParseTransaction(data: unknown): Promise~Result~
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
         -validateProcessorOneData(data: unknown): Result~ProcessorOneData, string[]~
         -parseAuthorizationTransaction(data: ProcessorOneData): ITransactionDetails
         -parseClearingTransaction(data: ProcessorOneData): ITransactionDetails
@@ -326,8 +326,8 @@ classDiagram
         -decryptionService: DecryptionService
         -schema: ProcessorTwoSchema
         -moduleOptions: IProcessorTwoModuleOptions
-        +validateAndParseTransaction(data: unknown): Promise~Result~ITransactionDetails, string[]~~
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~unknown, string~~
+        +validateAndParseTransaction(data: unknown): Promise~Result~
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
         -validateProcessorTwoData(data: unknown): Result~ProcessorTwoData, string[]~
         -parseTransactionEvent(data: ProcessorTwoData): ITransactionDetails
         -extractTransactionDetails(transaction: ProcessorTwoTransaction): ITransactionDetails
@@ -524,7 +524,7 @@ classDiagram
     class TransactionJobProcessor {
         -transactionService: TransactionService
         -logger: Logger
-        +processTransaction(job: Job~ITransactionDetails~): Promise~void~
+        +processTransaction(job: Job): Promise~void~
         -handleJobSuccess(job: Job): Promise~void~
         -handleJobFailure(job: Job, error: Error): Promise~void~
         -validateJobData(data: ITransactionDetails): boolean

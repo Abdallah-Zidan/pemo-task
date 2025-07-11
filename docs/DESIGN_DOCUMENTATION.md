@@ -92,13 +92,14 @@ The system follows a microservices pattern with two primary services:
 
 **Key Classes:**
 ```typescript
-@Controller('webhook')
+@Controller('gateway')
 export class GatewayController {
-  @Post(':processorId')
-  async processWebhook(@Param('processorId') processorId: string, @Body() data: unknown): Promise<any>
+  @Post('webhook/:processorId')
+  @HttpCode(202)
+  handleWebhook(@Param('processorId') processorId: string, @Body() body: unknown, @Headers() headers: RequestHeaders)
   
   @Get('transactions')
-  async getTransactions(@Query() query: GetTransactionsQuery): Promise<TransactionResponse>
+  async getTransactions(@Query() query: GetTransactionsQuery): Promise<GetTransactionResponseDto>
 }
 
 @Injectable()
@@ -199,20 +200,24 @@ CREATE TABLE transactions (
   transaction_correlation_id VARCHAR(255) NOT NULL,
   authorization_transaction_id VARCHAR(255) NOT NULL,
   clearing_transaction_id VARCHAR(255),
-  status VARCHAR(50) NOT NULL,
-  type VARCHAR(50) NOT NULL,
+  type ENUM('AUTHORIZATION', 'CLEARING') NOT NULL,
+  status ENUM('PENDING', 'SETTLED') NOT NULL,
   auth_amount DECIMAL(19,4) NOT NULL,
   clearing_amount DECIMAL(19,4),
   currency VARCHAR(3) NOT NULL,
-  mcc VARCHAR(255) NOT NULL,
   card_id VARCHAR(255) NOT NULL,
   user_id VARCHAR(255) NOT NULL,
+  mcc VARCHAR(255) NOT NULL,
   reference_number VARCHAR(255) NOT NULL,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   
-  UNIQUE(transaction_correlation_id, processor_id)
+  -- Indexes
+  INDEX idx_processor_id (processor_id),
+  INDEX idx_card_id (card_id),
+  INDEX idx_user_id (user_id),
+  UNIQUE INDEX idx_correlation_processor (transaction_correlation_id, processor_id)
 );
 ```
 
@@ -236,10 +241,10 @@ CREATE TABLE cards (
 ```sql
 CREATE TABLE transaction_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  transaction_id UUID REFERENCES transactions(id),
-  event_type VARCHAR(100) NOT NULL,
+  transaction_id UUID NOT NULL REFERENCES transactions(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  event_type VARCHAR(75) NOT NULL,
   data JSONB DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 ```
 

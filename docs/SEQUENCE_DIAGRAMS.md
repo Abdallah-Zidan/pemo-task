@@ -17,7 +17,7 @@ sequenceDiagram
 
     Note over PP,Card: Authorization Transaction Processing Flow
 
-    PP->>+GW: POST /webhook/processor-one
+    PP->>+GW: POST /gateway/webhook/processor-one
     Note right of PP: Authorization webhook payload
 
     GW->>+AM: getAdapter(processorId)
@@ -34,7 +34,7 @@ sequenceDiagram
         TS->>+Q: Add job to queue
         Q->>-TS: Job queued successfully
         TS->>-GW: {success: true}
-        GW->>-PP: 200 OK
+        GW->>-PP: 202 Accepted
 
         Note over Q,Card: Async Processing
 
@@ -83,7 +83,7 @@ sequenceDiagram
 
     Note over PP,Card: Clearing Transaction Processing Flow
 
-    PP->>+GW: POST /webhook/processor-one
+    PP->>+GW: POST /gateway/webhook/processor-one
     Note right of PP: Clearing webhook payload
 
     GW->>+AM: getAdapter(processorId)
@@ -100,7 +100,7 @@ sequenceDiagram
         TS->>+Q: Add clearing job to queue
         Q->>-TS: Job queued successfully
         TS->>-GW: {success: true}
-        GW->>-PP: 200 OK
+        GW->>-PP: 202 Accepted
 
         Note over Q,Card: Async Clearing Processing
 
@@ -153,7 +153,7 @@ sequenceDiagram
 
     Note over Client,DB: Transaction Query Flow
 
-    Client->>+GW: GET /transactions?cardId=123&limit=10&page=1
+    Client->>+GW: GET /gateway/transactions?cardId=123&limit=10&page=1
     
     GW->>GW: Validate query parameters
     GW->>+TS: getTransactions(query) via gRPC
@@ -194,7 +194,7 @@ sequenceDiagram
     Note over PP1,DS: Multi-Processor Support Flow
 
     par Processor One Transaction
-        PP1->>+GW: POST /webhook/processor-one
+        PP1->>+GW: POST /gateway/webhook/processor-one
         GW->>+AM: getAdapter('processor-one')
         AM->>-GW: ProcessorOneAdapter
         
@@ -206,10 +206,10 @@ sequenceDiagram
         PA1->>-GW: ITransactionDetails
         
         GW->>GW: Forward to transaction service
-        GW->>-PP1: 200 OK
+        GW->>-PP1: 202 Accepted
 
     and Processor Two Transaction
-        PP2->>+GW: POST /webhook/processor-two
+        PP2->>+GW: POST /gateway/webhook/processor-two
         GW->>+AM: getAdapter('processor-two')
         AM->>-GW: ProcessorTwoAdapter
         
@@ -221,7 +221,7 @@ sequenceDiagram
         PA2->>-GW: ITransactionDetails
         
         GW->>GW: Forward to transaction service
-        GW->>-PP2: 200 OK
+        GW->>-PP2: 202 Accepted
     end
 
     Note over GW: Both processors use same<br/>downstream processing pipeline
@@ -241,7 +241,7 @@ sequenceDiagram
 
     Note over PP,DB: Error Handling and Retry Flow
 
-    PP->>+GW: POST /webhook/processor-one
+    PP->>+GW: POST /gateway/webhook/processor-one
     
     GW->>+PA: validateAndParseTransaction(data)
     PA->>-GW: Validation error
@@ -249,7 +249,7 @@ sequenceDiagram
     GW->>-PP: 400 Bad Request
     Note right of GW: Early validation failure
 
-    PP->>+GW: POST /webhook/processor-one (retry)
+    PP->>+GW: POST /gateway/webhook/processor-one (retry)
     GW->>+PA: validateAndParseTransaction(data)
     PA->>-GW: Success - ITransactionDetails
     

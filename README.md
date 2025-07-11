@@ -1,53 +1,60 @@
 # PEMO Task - Payment Processing System
 
-A comprehensive payment processing system built with NestJS and Nx, designed to handle multi-processor payment transactions with event-driven architecture, queue processing, and microservices communication.
+A scalable payment processing system built with NestJS and Nx monorepo, designed to handle multi-processor payment transactions through pluggable adapters with event-driven architecture, background queue processing, and secure microservices communication.
 
-## 🏗️ Architecture Overview
+## 📋 Table of Contents
 
-PEMO Task is a modular payment processing system that supports multiple payment processors through a pluggable adapter architecture. The system consists of:
+- [System Overview](#-system-overview)
+- [Documentation](#-documentation)
+- [Quick Start](#-quick-start)
+- [Environment Configuration](#-environment-configuration)
+- [Development](#-development)
+- [API Reference](#-api-reference)
+- [Deployment](#-deployment)
 
-- **Gateway Service**: API gateway for external payment processor webhooks
-- **Transactions Service**: Core transaction processing and data management
-- **Processor Adapters**: Pluggable adapters for different payment processors
-- **Shared Libraries**: Common types, interfaces, and utilities
+## 🏗️ System Overview
 
-## 📦 Project Structure
+PEMO Task implements a comprehensive payment processing system that handles authorization and clearing transactions from multiple payment processors. The system uses a microservices architecture with the following key components:
 
-```
-pemo-task/
-├── apps/
-│   ├── gateway/              # API Gateway service
-│   ├── transactions/         # Core transaction processing service
-├── libs/
-│   ├── shared-types/         # Common types and interfaces
-│   ├── processor-adapter-manager/ # Adapter management system
-│   ├── processor-one-adapter/    # First payment processor adapter
-│   └── processor-two-adapter/    # Second payment processor adapter
-├── shared-proto/             # Protocol buffer definitions
-```
+### Core Services
+- **Gateway Service** (Port 3000): HTTP API gateway for external webhooks and transaction queries
+- **Transactions Service** (gRPC): Internal microservice for transaction processing and data persistence
 
-## 🚀 Features
+### Shared Libraries
+- **Processor Adapter Manager**: Plugin system for payment processor integrations
+- **Processor One Adapter**: SHA256 signature verification adapter
+- **Processor Two Adapter**: RSA decryption and API key verification adapter
+- **Shared Types**: Common interfaces, enums, and type definitions
+- **Shared Utilities**: Cryptographic services and common utilities
 
-### Core Features
-- **Multi-Processor Support**: Pluggable architecture for different payment processors
-- **Event-Driven Architecture**: Asynchronous event handling with BullMQ
-- **gRPC Communication**: Inter-service communication using Protocol Buffers
-- **Database Integration**: PostgreSQL with Sequelize ORM
-- **Queue Processing**: Background job processing with Redis
-- **Signature Verification**: Secure webhook signature validation
+### Infrastructure
+- **Database**: PostgreSQL with Sequelize ORM
+- **Queue System**: BullMQ with Redis for async processing
+- **Communication**: gRPC for inter-service communication
+- **Security**: Rate limiting, signature verification, and request validation
 
-### Payment Processing
-- **Authorization Transactions**: Handle payment authorization requests
-- **Clearing Transactions**: Process payment clearing and settlement
-- **Transaction Correlation**: Link authorization and clearing transactions
-- **Event Handling**: Process transaction events and notifications
-- **Analytics Integration**: Send transaction data to analytics services
+## 📚 Documentation
 
-### Developer Experience
-- **TypeScript**: Full type safety across the entire system
-- **Nx Monorepo**: Efficient development and build tooling
-- **Modular Architecture**: Reusable libraries and services
-- **ESLint & Prettier**: Code quality and formatting
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[Design Documentation](docs/DESIGN_DOCUMENTATION.md)** - System architecture, patterns, and design decisions
+- **[Class Diagrams](docs/CLASS_DIAGRAM.md)** - Visual representation of system components and relationships
+- **[Sequence Diagrams](docs/SEQUENCE_DIAGRAMS.md)** - Transaction processing flows and interactions
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete REST and gRPC API reference
+
+### Service Documentation
+- **[Gateway Service](apps/gateway/README.md)** - API gateway implementation details
+- **[Transactions Service](apps/transactions/README.md)** - Core transaction processing service
+- **[Shared Utilities](libs/shared-utilities/README.md)** - Common utilities and security services
+
+## 🚀 Key Features
+
+- **Multi-Processor Support**: Pluggable adapter architecture supporting unlimited payment processors
+- **Secure Processing**: Signature verification, API key validation, and request encryption/decryption
+- **Event-Driven Architecture**: Asynchronous transaction processing with event handlers
+- **Credit Management**: Real-time card utilization tracking with race condition protection
+- **Scalable Design**: Microservices with gRPC communication and background queue processing
+- **Comprehensive Testing**: Unit tests covering validation, processing, and integration scenarios
 
 ## 🛠️ Technology Stack
 
@@ -66,61 +73,110 @@ pemo-task/
 ### Prerequisites
 
 - Node.js 18+
-- PostgreSQL
-- Redis
-- pnpm (recommended)
+- PostgreSQL 13+
+- Redis 6+
+- pnpm (recommended) or npm
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone and Install**:
 ```bash
 git clone <repository-url>
 cd pemo-task
-```
-
-2. Install dependencies:
-```bash
 pnpm install
 ```
 
-3. Set up environment variables:
+2. **Environment Setup**:
 ```bash
 cp .env.example .env
-cd apps/transactions && cp .env.example .env
-cd ../gateway && cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration (see Environment Configuration section)
 ```
 
-4. Set up the database:
+3. **Database Setup**:
 ```bash
+# Start PostgreSQL and Redis services
 # Run database migrations
-nx db:migrate transactions
+cd apps/transactions
+npx sequelize-cli db:migrate
 ```
 
-5. Start the development servers:
+4. **Start Services**:
 ```bash
-# Start the gateway service
-npx nx serve gateway
+# Start both services in parallel
+npx nx run-many --target=serve --projects=gateway,transactions --parallel=true
 
-# Start the transactions service
-npx nx serve transactions
-
-# start both services in parallel 
-npx nx run-many --target=serve --parallel=true
+# Or start individually
+npx nx serve gateway      # Port 3000
+npx nx serve transactions # gRPC port from TRANSACTIONS_GRPC_URL
 ```
+
+5. **Verify Installation**:
+```bash
+# Check gateway health
+curl http://localhost:3000/health
+
+# Check API documentation
+open http://localhost:3000/api-docs
+```
+
+## ⚙️ Environment Configuration
+
+The system requires several environment variables. Copy `.env.example` to `.env` and configure:
+
+### Required Configuration
+
+```bash
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=pemo_task
+
+# Redis Configuration
+REDIS_URL=redis://localhost:6379
+
+# Service Configuration
+TRANSACTIONS_GRPC_URL=0.0.0.0:50052
+NODE_ENV=development
+GATEWAY_PORT=3000
+
+# Rate Limiting
+THROTTLE_TTL_MS=60000
+THROTTLE_LIMIT=100
+
+# Processor One Configuration (Base64 encoded)
+PROCESSOR_ONE_PUBLIC_KEY_BASE64=your_base64_encoded_public_key
+
+# Processor Two Configuration (Base64 encoded)
+PROCESSOR_TWO_DECRYPTION_PRIVATE_KEY_BASE64=your_base64_private_key
+PROCESSOR_TWO_SIGNATURE_VERIFICATION_PUBLIC_KEY_BASE64=your_base64_public_key
+PROCESSOR_TWO_API_KEY=your_processor_two_api_key
+```
+
+### Environment Variable Details
+
+- **TRANSACTIONS_GRPC_URL**: gRPC server endpoint for inter-service communication
+- **NODE_ENV**: Environment mode (development, staging, production)
+- **PROCESSOR_*_PUBLIC_KEY_BASE64**: Base64-encoded public keys for signature verification
+- **PROCESSOR_TWO_DECRYPTION_PRIVATE_KEY_BASE64**: RSA private key for payload decryption
+- **THROTTLE_***: Rate limiting configuration for API endpoints
 
 ## 🔧 Development
 
-### Running Services
+### Development Commands
 
 ```bash
-# Development mode
-npx nx serve gateway         
-npx nx serve transactions     
+# Start services in development mode
+npx nx serve gateway           # API Gateway on port 3000
+npx nx serve transactions      # gRPC service
 
-# Production build
+# Build for production
 npx nx build gateway
 npx nx build transactions
+
+# Run all services in parallel
+npx nx run-many --target=serve --projects=gateway,transactions --parallel=true
 ```
 
 ### Testing
@@ -129,13 +185,15 @@ npx nx build transactions
 # Run all tests
 npx nx test
 
-# Run tests for specific project
+# Run tests for specific projects
 npx nx test gateway
 npx nx test transactions
-npx nx test shared-types
-npx nx test processor-adapter-manager
 npx nx test processor-one-adapter
 npx nx test processor-two-adapter
+npx nx test shared-utilities
+
+# Run tests with coverage
+npx nx test gateway --coverage
 ```
 
 ### Code Quality
@@ -147,158 +205,139 @@ npx nx lint
 # Format code
 npx nx format:write
 
-# Type check
-npx nx run-many --target=type-check
+# Type checking
+npx nx run-many --target=typecheck
 ```
 
-## 📚 API Documentation
+## 📖 API Reference
 
-### Gateway Endpoints
+### Gateway REST API
 
-- `POST /webhook/processor-one` - Processor One webhook endpoint
-- `POST /webhook/processor-two` - Processor Two webhook endpoint  
-- `GET /health` - Health check endpoint
+**Base URL**: `http://localhost:3000`
 
-### Transaction Processing Flow
+#### Webhook Endpoints
+```http
+POST /gateway/webhook/{processorId}
+Content-Type: application/json
+Authorization: Bearer <processor-specific-auth>
 
-1. **Webhook Receipt**: Gateway receives webhook from payment processor
-2. **Validation**: Signature verification and payload validation
-3. **Processing**: Transaction data parsing and normalization
-4. **Storage**: Transaction persistence in database
-5. **Events**: Event emission for downstream processing
-6. **Queues**: Background job processing for notifications and analytics
-
-## 🔌 Processor Adapters
-
-The system supports multiple payment processors through a pluggable adapter architecture:
-
-### Creating a New Processor Adapter
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { ProcessorAdapter, IProcessorAdapter } from '@pemo-task/processor-adapter-manager';
-import { ITransactionDetails, Result } from '@pemo-task/shared-types';
-
-@Injectable()
-@ProcessorAdapter('my-processor')
-export class MyProcessorAdapter implements IProcessorAdapter {
-  async validateAndParseTransaction(data: unknown): Promise<Result<ITransactionDetails, string[]>> {
-    // Implement validation and parsing logic
-  }
-
-  async authorizeTransaction(data: unknown, headers: RequestHeaders): Promise<Result<unknown, string>> {
-    // Implement authorization logic
-  }
-}
+# Process payment processor webhooks
+# Returns: 202 Accepted (async processing)
 ```
 
-### Existing Adapters
+#### Transaction Query
+```http
+GET /gateway/transactions?page=1&limit=10&status=PENDING
+Authorization: Bearer <auth-token>
 
-- **Processor One Adapter**: SHA256 signature verification with custom parsing
-- **Processor Two Adapter**: Alternative processor implementation
-
-## 📊 Database Schema
-
-### Core Tables
-
-- **transactions**: Main transaction records
-- **cards**: Card information and metadata
-- **transaction_events**: Event tracking and audit trail
-
-### Migrations
-
-Database migrations are located in `apps/transactions/db/migrations/`:
-
-```bash
-# Create new migration
-npx sequelize-cli migration:generate --name migration-name
-
-# Run migrations
-npx sequelize-cli db:migrate
-
-# Rollback migration
-npx sequelize-cli db:migrate:undo
+# Query transactions with pagination and filtering
+# Returns: Paginated transaction list
 ```
 
-## 🔄 Event Processing
+#### Health Check
+```http
+GET /health
 
-The system uses an event-driven architecture with the following event types:
-
-- `AUTHORIZATION_TRANSACTION_PROCESSED`
-- `CLEARING_TRANSACTION_PROCESSED`
-- `AUTHORIZATION_EVENT_HANDLED`
-- `CLEARING_EVENT_HANDLED`
-- `CARDHOLDER_NOTIFIED`
-- `ANALYTICS_SENT`
-
-### Event Handlers
-
-Events are processed by dedicated handlers in the transactions service:
-
-```typescript
-@OnEvent('AUTHORIZATION_TRANSACTION_PROCESSED')
-async handleAuthorizationEvent(payload: ITransactionDetails) {
-  // Process authorization event
-}
+# System health status
+# Returns: 200 OK with service status
 ```
+
+### gRPC API
+
+**Service**: `transactions.TransactionsService`
+**Endpoint**: Configured via `TRANSACTIONS_GRPC_URL`
+
+```protobuf
+// Process incoming transaction
+rpc ProcessTransaction(TransactionProcessingRequest) returns (ProcessTransactionResponse);
+
+// Query transactions
+rpc GetTransactions(GetTransactionsRequest) returns (GetTransactionsResponse);
+```
+
+For complete API documentation with request/response schemas, see [API Documentation](docs/API_DOCUMENTATION.md).
 
 ## 🚀 Deployment
 
-### Docker
+### Docker Deployment
 
 ```bash
-# Build Docker images
-docker build -t pemo-task-gateway -f apps/gateway/Dockerfile .
-docker build -t pemo-task-transactions -f apps/transactions/Dockerfile .
-
-# Run with docker-compose
+# Build and run with Docker Compose
 docker-compose up -d
+
+# Build individual services
+docker build -t pemo-gateway -f apps/gateway/Dockerfile .
+docker build -t pemo-transactions -f apps/transactions/Dockerfile .
 ```
 
-### Environment Variables
-
-Required environment variables:
+### Production Environment
 
 ```bash
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/pemo_task
+# Set production environment
+NODE_ENV=production
 
-# Redis
-REDIS_URL=redis://localhost:6379
+# Build production artifacts
+npx nx build gateway --prod
+npx nx build transactions --prod
 
-# Service URLs
-TRANSACTIONS_GRPC_URL=http://localhost:50051
-
-# Processor Configuration
-PROCESSOR_ONE_SECRET=your-secret-key
-PROCESSOR_TWO_SECRET=your-secret-key
+# Run production builds
+node dist/apps/gateway/main.js
+node dist/apps/transactions/main.js
 ```
 
-## 📈 Monitoring & Observability
+### Database Migrations in Production
 
-- **Health Checks**: Built-in health check endpoints
-- **Logging**: Structured logging with configurable levels
+```bash
+# Run migrations before deployment
+cd apps/transactions
+NODE_ENV=production npx sequelize-cli db:migrate
+```
 
-## 🧪 Testing Strategy
+## 🔧 System Architecture
 
-### Unit Tests
-- Service layer testing
-- Adapter testing
-- Utility function testing
+### Transaction Processing Flow
 
+1. **Webhook Receipt**: Payment processor sends webhook to gateway
+2. **Authentication**: Signature verification and request validation
+3. **Queue Processing**: Transaction queued for async processing
+4. **Adapter Processing**: Processor-specific parsing and validation
+5. **Database Storage**: Transaction persistence with correlation
+6. **Event Emission**: Authorization/clearing events triggered
+7. **Card Management**: Credit utilization calculations
+8. **Notifications**: Cardholder and analytics events
 
-## 🔐 Security
+### Database Schema
 
-- **Signature Verification**: Webhook signature validation
-- **Input Validation**: Comprehensive request validation
-- **Type Safety**: TypeScript for compile-time safety
-- **Environment Configuration**: Secure configuration management
+**Transactions Table**:
+- Unique constraint on `[transaction_correlation_id, processor_id]`
+- Support for both authorization and clearing transaction types
+- JSONB metadata for processor-specific fields
 
-## 🛣️ Roadmap
+**Cards Table**:
+- Real-time credit utilization tracking
+- Race condition protection with database locks
+- Automatic card creation on first transaction
 
-- [ ] Additional payment processor adapters
-- [ ] Real-time transaction monitoring
-- [ ] Enhanced analytics and reporting
-- [ ] API rate limiting and throttling
-- [ ] Comprehensive logging and audit trails
-- [ ] Performance optimization and caching
+**Transaction Events Table**:
+- Audit trail for all transaction events
+- Event data stored as JSONB for flexibility
+
+## 🔐 Security Features
+
+- **Webhook Security**: SHA256/RSA signature verification for all processors
+- **Rate Limiting**: Redis-backed throttling with configurable limits
+- **Input Validation**: Comprehensive request validation with Zod schemas
+- **Type Safety**: Full TypeScript coverage for compile-time safety
+- **Secure Configuration**: Environment-based configuration management
+- **Database Security**: SQL injection prevention with Sequelize ORM
+
+## 🧪 Testing Coverage
+
+The system includes comprehensive unit tests covering:
+
+- **Adapter Validation**: Transaction parsing and signature verification
+- **Service Logic**: Business logic and error handling
+- **Event Handlers**: Authorization and clearing event processing
+- **Database Operations**: Transaction correlation and card management
+- **Queue Processing**: Background job execution
+- **API Endpoints**: Request/response validation

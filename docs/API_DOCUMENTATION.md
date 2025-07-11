@@ -18,8 +18,8 @@ The PEMO Payment Processing System exposes two primary API surfaces:
 - **Transaction Service**: gRPC API for internal service communication
 
 ### Base URLs
-- **Gateway Service**: `https://api.pemo.com/v1`
-- **Transaction Service**: `grpc://transactions:50051`
+- **Gateway Service**: `http://localhost:3000` (development)
+- **Transaction Service**: `grpc://localhost:50052` (configurable via TRANSACTIONS_GRPC_URL)
 
 ### API Versioning
 - REST API: Version specified in URL path (`/v1/`)
@@ -31,10 +31,10 @@ The PEMO Payment Processing System exposes two primary API surfaces:
 Payment processor webhooks are authenticated using signature verification:
 
 ```http
-POST /webhook/processor-one
+POST /gateway/webhook/processor-one
 Content-Type: application/json
 X-Signature: sha256=<HMAC-SHA256-signature>
-X-Timestamp: 1640995200
+Authorization: Bearer <processor-api-key>
 
 {
   "transaction_data": "..."
@@ -60,7 +60,7 @@ X-Timestamp: 1640995200
 Receives and processes webhooks from payment processors.
 
 ```http
-POST /webhook/{processorId}
+POST /gateway/webhook/{processorId}
 ```
 
 **Path Parameters:**
@@ -78,13 +78,12 @@ Processor-specific JSON payload (varies by processor)
 
 Success Response:
 ```http
-HTTP/1.1 200 OK
+HTTP/1.1 202 Accepted
 Content-Type: application/json
 
 {
   "success": true,
-  "message": "Transaction processed successfully",
-  "transactionId": "550e8400-e29b-41d4-a716-446655440000"
+  "message": "Transaction queued for processing"
 }
 ```
 
@@ -106,10 +105,10 @@ Content-Type: application/json
 
 **Example Request (Processor One):**
 ```bash
-curl -X POST https://api.pemo.com/v1/webhook/processor-one \
+curl -X POST http://localhost:3000/gateway/webhook/processor-one \
   -H "Content-Type: application/json" \
   -H "X-Signature: sha256=abc123..." \
-  -H "X-Timestamp: 1640995200" \
+  -H "Authorization: Bearer processor-api-key" \
   -d '{
     "id": "2035ed99-38ab-4a42-8125-fcbd906dba7a",
     "message_type": "AUTHORIZATION",
@@ -126,7 +125,7 @@ curl -X POST https://api.pemo.com/v1/webhook/processor-one \
 Retrieves a paginated list of transactions with optional filtering.
 
 ```http
-GET /transactions
+GET /gateway/transactions
 ```
 
 **Query Parameters:**
@@ -174,7 +173,7 @@ Content-Type: application/json
 
 **Example Request:**
 ```bash
-curl -X GET "https://api.pemo.com/v1/transactions?cardId=21407f60-ff6d-40b9-9798-3c77496982f6&page=1&limit=10" \
+curl -X GET "http://localhost:3000/gateway/transactions?cardId=21407f60-ff6d-40b9-9798-3c77496982f6&page=1&limit=10" \
   -H "Accept: application/json"
 ```
 
