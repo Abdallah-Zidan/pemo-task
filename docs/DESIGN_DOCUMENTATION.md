@@ -14,7 +14,7 @@
 
 ## System Overview
 
-PEMO is a comprehensive payment processing system designed to handle transactions from multiple payment processors through a scalable, event-driven microservices architecture. The system emphasizes modularity, extensibility, and robust transaction processing.
+PEMO is a comprehensive processing system designed to handle transactions from multiple payment processors through a scalable, event-driven microservices architecture. The system emphasizes modularity, extensibility, and robust transaction processing.
 
 ### Key Objectives
 - **Multi-Processor Support**: Seamlessly accommodate unlimited payment processors
@@ -85,8 +85,9 @@ The system follows a microservices pattern with two primary services:
 
 **Responsibilities:**
 - Receive webhook requests from payment processors
-- Validate webhook signatures for security
 - Route requests to appropriate processor adapters
+- Validate webhook requests
+- Validate webhook signatures for security
 - Forward transaction data to Transaction Service via gRPC
 - Provide transaction query endpoints
 
@@ -116,6 +117,7 @@ export class GatewayService {
 - Emit transaction events
 - Manage card utilization calculations
 - Handle authorization and clearing logic
+- Log analytics and notify cardholder
 
 **Key Classes:**
 ```typescript
@@ -171,83 +173,23 @@ export interface IProcessorAdapter {
 ### Entity Relationship Diagram
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+┌─────────────────-┐    ┌─────────────────-┐    ┌─────────────────-┐
 │     Cards       │    │  Transactions   │    │TransactionEvents│
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
+├─────────────────-┤    ├─────────────────-┤    ├─────────────────-┤
 │ id (UUID) PK    │    │ id (UUID) PK    │    │ id (UUID) PK    │
 │ cardId (String) │◄───┤ cardId (String) │    │ transactionId   │◄──┐
 │ userId (String) │    │ userId (String) │    │ eventType       │   │
 │ creditLimit     │    │ processorId     │    │ data (JSONB)    │   │
 │ availableCredit │    │ status          │    │ createdAt       │   │
-│ settledBalance  │    │ type            │    └─────────────────┘   │
-│ pendingBalance  │    │ authAmount      │                        │
-│ currentUtilization   │ clearingAmount  │                        │
-│ createdAt       │    │ currency        │                        │
-│ updatedAt       │    │ metadata (JSONB)│                        │
-└─────────────────┘    │ createdAt       │                        │
-                       │ updatedAt       │────────────────────────┘
-                       └─────────────────┘
+│ settledBalance  │    │ type            │    └─────────────────-┘   │
+│ pendingBalance  │    │ authAmount      │                          │
+│ currentUtilization   │ clearingAmount  │                          │
+│ createdAt       │    │ currency        │                          │
+│ updatedAt       │    │ metadata (JSONB)│                          │
+└─────────────────-┘    │ createdAt       │                          │
+                       │ updatedAt       │────────────────────────---┘
+                       └─────────────────-┘
 ```
-
-### Table Specifications
-
-#### Transactions Table
-```sql
-CREATE TABLE transactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  processor_id VARCHAR(255) NOT NULL,
-  processor_name VARCHAR(255) NOT NULL,
-  transaction_correlation_id VARCHAR(255) NOT NULL,
-  authorization_transaction_id VARCHAR(255) NOT NULL,
-  clearing_transaction_id VARCHAR(255),
-  type ENUM('AUTHORIZATION', 'CLEARING') NOT NULL,
-  status ENUM('PENDING', 'SETTLED') NOT NULL,
-  auth_amount DECIMAL(19,4) NOT NULL,
-  clearing_amount DECIMAL(19,4),
-  currency VARCHAR(3) NOT NULL,
-  card_id VARCHAR(255) NOT NULL,
-  user_id VARCHAR(255) NOT NULL,
-  mcc VARCHAR(255) NOT NULL,
-  reference_number VARCHAR(255) NOT NULL,
-  metadata JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  
-  -- Indexes
-  INDEX idx_processor_id (processor_id),
-  INDEX idx_card_id (card_id),
-  INDEX idx_user_id (user_id),
-  UNIQUE INDEX idx_correlation_processor (transaction_correlation_id, processor_id)
-);
-```
-
-#### Cards Table
-```sql
-CREATE TABLE cards (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  card_id VARCHAR(255) UNIQUE NOT NULL,
-  user_id VARCHAR(255) NOT NULL,
-  credit_limit DECIMAL(19,4) DEFAULT 0,
-  available_credit DECIMAL(19,4) DEFAULT 0,
-  settled_balance DECIMAL(19,4) DEFAULT 0,
-  pending_balance DECIMAL(19,4) DEFAULT 0,
-  current_utilization DECIMAL(19,4) DEFAULT 0,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### Transaction Events Table
-```sql
-CREATE TABLE transaction_events (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  transaction_id UUID NOT NULL REFERENCES transactions(id) ON UPDATE CASCADE ON DELETE CASCADE,
-  event_type VARCHAR(75) NOT NULL,
-  data JSONB DEFAULT '{}',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```
-
 ### Database Design Principles
 
 1. **Normalization**: Tables are normalized to 3NF to reduce data redundancy
@@ -310,20 +252,6 @@ export class TransactionService {
 }
 ```
 
-### 5. Factory Pattern
-**Implementation**: Adapter registration and creation
-```typescript
-@Injectable()
-export class AdapterFactory {
-  createAdapter(processorId: string): IProcessorAdapter {
-    switch (processorId) {
-      case 'processor-one': return new ProcessorOneAdapter()
-      case 'processor-two': return new ProcessorTwoAdapter()
-      default: throw new Error(`Unknown processor: ${processorId}`)
-    }
-  }
-}
-```
 
 ### SOLID Principles Application
 
@@ -338,9 +266,7 @@ export class AdapterFactory {
 ### Horizontal Scaling Strategies
 
 1. **Stateless Services**: All services are stateless, enabling horizontal scaling
-2. **Database Sharding**: Partition transactions by processor_id or date ranges
-3. **Read Replicas**: Separate read/write database instances for query optimization
-4. **Caching**: Redis caching for frequently accessed transaction data
+2. **Asynchronous Processing**: Use event-driven architecture for background processing
 
 ### Queue Processing
 
@@ -357,9 +283,8 @@ export class TransactionJobProcessor {
 ### Performance Optimizations
 
 1. **Connection Pooling**: Database connection pooling for efficient resource usage
-2. **Bulk Operations**: Batch processing for multiple transactions
-3. **Async Processing**: Non-blocking event handling and queue processing
-4. **Database Indexing**: Optimized indexes for common query patterns
+2. **Async Processing**: Non-blocking event handling and queue processing
+3. **Database Indexing**: Optimized indexes for common query patterns
 
 ## Security & Data Integrity
 
@@ -400,7 +325,6 @@ async verifySignature(data: string, signature: string, secret: string): Promise<
 
 2. **Input Validation**: Zod schema validation for all inputs
 3. **Environment Security**: Secure configuration management
-4. **Database Security**: Connection encryption and access controls
 
 ## Event-Driven Architecture
 
@@ -482,9 +406,6 @@ export class ProcessorAdapterManager {
   private adapters = new Map<string, IProcessorAdapter>()
   
   async getAdapter(processorId: string): Promise<IProcessorAdapter> {
-    if (!this.adapters.has(processorId)) {
-      throw new Error(`No adapter found for processor: ${processorId}`)
-    }
     return this.adapters.get(processorId)!
   }
 }
@@ -536,19 +457,10 @@ interface Result<T, E> {
   error?: E
 }
 
-class ApplicationError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly statusCode: number = 500
-  ) {
-    super(message)
-  }
-}
 ```
 
 ## Conclusion
 
-This design documentation provides a comprehensive overview of the PEMO payment processing system architecture. The system is built with scalability, maintainability, and extensibility as core principles, utilizing proven design patterns and modern technologies to deliver a robust payment processing solution.
+This design documentation provides a comprehensive overview of the PEMO processing system architecture. The system is built with scalability, maintainability, and extensibility as core principles, utilizing proven design patterns and modern technologies to deliver a robust  processing solution.
 
 The modular architecture, combined with the adapter pattern for processor integration, ensures that the system can efficiently handle unlimited payment processors while maintaining code quality and system performance.
