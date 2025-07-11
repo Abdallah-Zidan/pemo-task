@@ -379,19 +379,6 @@ const isValid = signatureService.verifySignature({
 });
 ```
 
-#### Decryption Errors
-```typescript
-// Verify key format and data encoding
-try {
-  const decrypted = decryptionService.privateDecrypt({
-    data: base64EncryptedData,
-    privateKey: pemFormattedPrivateKey
-  });
-} catch (error) {
-  console.error('Decryption failed:', error.message);
-}
-```
-
 #### Logging Configuration Issues
 ```bash
 # Check environment variables
@@ -399,38 +386,5 @@ LOG_LEVEL=debug
 NODE_ENV=development
 LOG_REQUEST_BODY=true
 ```
-
-## 🚀 Contributing
-
-When adding new utilities to this library:
-
-1. **Follow the existing patterns** - Match the structure and style
-2. **Add comprehensive tests** - Include edge cases and error scenarios
-3. **Update exports** - Add to appropriate index.ts files
-4. **Document thoroughly** - Include JSDoc comments and examples
-5. **Consider security** - Sanitize sensitive data and handle errors gracefully
-
-### Adding a New Service
-
-```typescript
-// 1. Create the service
-// src/services/my-new.service.ts
-@Injectable()
-export class MyNewService {
-  // Implementation
-}
-
-// 2. Add tests
-// src/services/my-new.service.spec.ts
-
-// 3. Export from services index
-// src/services/index.ts
-export * from './my-new.service';
-
-// 4. Add to module
-// src/shared-utilities.module.ts
-providers: [..., MyNewService],
-exports: [..., MyNewService],
-```
-
-This shared utilities library provides a solid foundation of reusable functionality that ensures consistency, security, and maintainability across the entire PEMO payment processing system.
+---
+This shared utilities library provides a solid foundation of reusable functionality that ensures consistency, security, and maintainability across the entire PEMO  processing system.

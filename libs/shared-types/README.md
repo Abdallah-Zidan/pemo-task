@@ -15,11 +15,7 @@ The Shared Types library ensures type consistency and code reusability across th
 - **Utility Functions**: Helper functions for type checking and validation
 - **Full TypeScript Support**: Complete type safety and IntelliSense support
 
-## Installation
 
-```bash
-npm install @pemo-task/shared-types
-```
 
 ## Usage
 
@@ -417,16 +413,6 @@ class PaymentProcessor {
 
 Run `nx build shared-types` to build the library.
 
-## Contributing
-
-When contributing to this library:
-
-1. **Maintain Type Safety**: All exports should be fully typed
-2. **Follow Naming Conventions**: Use clear, descriptive names
-3. **Document New Types**: Add comprehensive documentation for new types
-4. **Update Examples**: Include usage examples for new functionality
-5. **Consider Breaking Changes**: Use semantic versioning for breaking changes
-
 ## Best Practices
 
 - **Use Result Pattern**: Prefer `Result<T, E>` for operations that can fail
@@ -434,7 +420,3 @@ When contributing to this library:
 - **Type Guards**: Use `isObject` and similar utilities for runtime type checking
 - **Generic Interfaces**: Use generic parameters for flexible type definitions
 - **Consistent Naming**: Follow established naming patterns for new types
-
-## License
-
-This library is part of the PEMO Task project.

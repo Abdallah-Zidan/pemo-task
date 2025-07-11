@@ -14,12 +14,6 @@ The Processor Adapter Manager uses NestJS's reflection capabilities to automatic
 - **Type Safety**: Full TypeScript support with proper interfaces
 - **Error Handling**: Comprehensive validation and error reporting
 
-## Installation
-
-```bash
-npm install @pemo-task/processor-adapter-manager
-```
-
 ## Usage
 
 ### 1. Module Import
@@ -181,7 +175,3 @@ When adding new processor adapters:
 2. Add the `@ProcessorAdapter` decorator with a unique processor ID
 3. Ensure proper error handling and validation
 4. Add comprehensive tests
-
-## License
-
-This library is part of the PEMO Task project.

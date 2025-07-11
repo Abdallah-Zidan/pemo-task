@@ -39,12 +39,6 @@ interface IModuleOptions {
 }
 ```
 
-### Environment Variables
-
-```bash
-PROCESSOR_ONE_PUBLIC_KEY_BASE64=your_base64_encoded_public_key
-```
-
 ## Usage
 
 ### Module Registration

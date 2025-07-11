@@ -43,14 +43,6 @@ interface IModuleOptions {
 }
 ```
 
-### Environment Variables
-
-```bash
-PROCESSOR_TWO_DECRYPTION_PRIVATE_KEY_BASE64=your_base64_encoded_private_key
-PROCESSOR_TWO_SIGNATURE_VERIFICATION_PUBLIC_KEY_BASE64=your_base64_encoded_public_key
-PROCESSOR_TWO_API_KEY=your_processor_two_api_key
-```
-
 ## Usage
 
 ### Module Registration
@@ -154,7 +146,6 @@ const payloadToSign = `${data.id}|${data.type}|${data.transaction.details.scheme
 enum ProcessorTransactionStatus {
   PENDING = 'PENDING',
   POSTED = 'POSTED', 
-  REJECTED = 'REJECTED'
 }
 
 enum ProcessorTransactionType {
@@ -297,4 +288,4 @@ scheme_billing_amount: z.string()
   .transform((val) => Number(val))
 ```
 
-This adapter provides enterprise-grade security and reliability for processing encrypted webhook transactions from Processor Two while maintaining seamless integration with the PEMO payment processing architecture.
+This adapter provides enterprise-grade security and reliability for processing encrypted webhook transactions from Processor Two while maintaining seamless integration with the PEMO  processing architecture
