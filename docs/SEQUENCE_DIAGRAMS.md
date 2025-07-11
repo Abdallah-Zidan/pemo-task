@@ -9,61 +9,63 @@ sequenceDiagram
     participant AM as Adapter Manager
     participant PA as Processor Adapter
     participant TS as Transaction Service
-    participant Q as Queue (BullMQ)
+    participant Q as Queue
     participant JP as Job Processor
     participant EH as Event Handler
     participant DB as Database
-    participant Card as Card Service
+    participant CS as Card Service
 
-    Note over PP,Card: Authorization Transaction Processing Flow
+    Note over PP,GW: Authorization Transaction Processing Flow
 
-    PP->>+GW: POST /gateway/webhook/processor-one
-    Note right of PP: Authorization webhook payload
+    PP->>GW: POST /webhook/processor-one
+    Note over PP: Authorization webhook payload
 
-    GW->>+AM: getAdapter(processorId)
-    AM->>-GW: ProcessorAdapter instance
+    GW->>AM: getAdapter(processorId)
+    AM-->>GW: ProcessorAdapter instance
 
-    GW->>+PA: validateAndParseTransaction(data)
-    PA->>PA: Validate signature
+    GW->>PA: validateAndParseTransaction(data)
     PA->>PA: Validate schema
-    PA->>PA: Parse to ITransactionDetails
-    PA->>-GW: Result<ITransactionDetails>
+    PA->>PA: Parse to transaction details
+    PA-->>GW: Parsed transaction details
+    GW->> PA: VauthorizeTransaction(data)
+    PA->>PA: Validate signature and/or check api key and perform any logic
+    PA->> GW: transaction authorized
 
-    alt Validation Success
-        GW->>+TS: processTransaction(transactionDetails)
-        TS->>+Q: Add job to queue
-        Q->>-TS: Job queued successfully
-        TS->>-GW: {success: true}
-        GW->>-PP: 202 Accepted
+    alt Validation success
+        GW->>TS: processTransaction(details)
+        TS->>Q: Add job to queue
+        Q-->>TS: Job queued
+        TS-->>GW: Success
+        GW-->>PP: 202 Accepted
 
-        Note over Q,Card: Async Processing
+        Note over Q,CS: Async Processing
 
-        Q->>+JP: Process job
+        Q->>JP: Process job
         JP->>TS: processAuthorizationTransaction(data)
         
-        TS->>+DB: Begin transaction
+        TS->>DB: Begin transaction
         TS->>DB: findOrCreate transaction
         TS->>DB: Create transaction event
-        TS->>-DB: Commit transaction
+        TS-->>DB: Commit transaction
 
-        TS->>+EH: Emit 'transaction.AUTHORIZATION' event
-        EH->>+Card: Calculate card utilization
-        
-        Card->>+DB: SELECT FOR UPDATE card
-        Card->>DB: Update card balances
-        Card->>-DB: Commit card update
+        TS->>EH: Emit transaction.AUTHORIZATION
+        EH->>CS: Calculate card utilization
 
-        EH->>DB: Create AUTHORIZATION_EVENT_HANDLED event
-        EH->>DB: Create CARDHOLDER_NOTIFIED event
-        EH->>-TS: Event processing complete
+        CS->>DB: SELECT FOR UPDATE card
+        CS->>DB: Update balances
+        CS-->>DB: Commit update
 
-        TS->>JP: Transaction processed
-        JP->>-Q: Job completed
+        EH->>DB: Log event handled
+        EH->>DB: Log cardholder notified
+        EH-->>TS: Done
 
-    else Validation Failed
-        GW->>-PP: 400 Bad Request
-        Note right of GW: Validation errors returned
+        TS-->>JP: Done
+        JP-->>Q: Job completed
+    else Validation failed
+        GW-->>PP: 400 Bad Request
+        Note over GW: Validation errors returned
     end
+
 ```
 
 ## Clearing Transaction Flow
