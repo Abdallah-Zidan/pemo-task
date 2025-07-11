@@ -12,6 +12,7 @@ import {
   TransactionType,
   TransactionEventType,
 } from '@pemo-task/shared-types';
+import { PendingClearingTransaction } from '../../models/pending-clearing-transaction.model';
 
 describe('TransactionService', () => {
   let service: TransactionService;
@@ -77,6 +78,13 @@ describe('TransactionService', () => {
       findOne: jest.fn(),
     };
 
+    const mockPendingClearingTransactionModel = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      findOrCreate: jest.fn(),
+    };
+
     const mockSequelize = {
       transaction: jest.fn((callback) => callback(mockTransaction)),
     };
@@ -95,6 +103,10 @@ describe('TransactionService', () => {
         {
           provide: getModelToken(TransactionEvent),
           useValue: mockTransactionEventModel,
+        },
+        {
+          provide: getModelToken(PendingClearingTransaction),
+          useValue: mockPendingClearingTransactionModel,
         },
         {
           provide: Sequelize,
@@ -316,22 +328,6 @@ describe('TransactionService', () => {
         'transaction.CLEARING',
         expect.objectContaining({ status: TransactionStatus.SETTLED }),
       );
-    });
-
-    it('should throw error when pending transaction not found', async () => {
-      transactionModel.findOne.mockResolvedValue(null);
-
-      const loggerSpy = jest.spyOn(service['logger'], 'warn').mockImplementation();
-
-      await expect(service.processClearingTransaction(mockTransactionDetails)).rejects.toThrow(
-        'transaction to be settled is not found: processor-one:corr-123',
-      );
-
-      expect(loggerSpy).toHaveBeenCalledWith(
-        'transaction to be settled is not found: processor-one:corr-123',
-      );
-
-      loggerSpy.mockRestore();
     });
 
     it('should warn and return early for already settled transactions', async () => {
