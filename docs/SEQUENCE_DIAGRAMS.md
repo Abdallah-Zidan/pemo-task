@@ -27,7 +27,7 @@ sequenceDiagram
     PA->>PA: Validate schema
     PA->>PA: Parse to transaction details
     PA-->>GW: Parsed transaction details
-    GW->> PA: VauthorizeTransaction(data)
+    GW->> PA: authorizeTransaction(data)
     PA->>PA: Validate signature and/or check api key and perform any logic
     PA->> GW: transaction authorized
 
@@ -77,71 +77,67 @@ sequenceDiagram
     participant AM as Adapter Manager
     participant PA as Processor Adapter
     participant TS as Transaction Service
-    participant Q as Queue (BullMQ)
+    participant Q as Queue
     participant JP as Job Processor
     participant EH as Event Handler
     participant DB as Database
-    participant Card as Card Service
+    participant CS as Card Service
+    participant NS as Notifcation Service
+    participant AS Analytics Service
 
-    Note over PP,Card: Clearing Transaction Processing Flow
+    Note over PP,GW: Clearing Transaction Processing Flow
 
-    PP->>+GW: POST /gateway/webhook/processor-one
-    Note right of PP: Clearing webhook payload
+    PP->>GW: POST /webhook/processor-one
+    Note over PP: Clearing webhook payload
 
-    GW->>+AM: getAdapter(processorId)
-    AM->>-GW: ProcessorAdapter instance
+    GW->>AM: getAdapter(processorId)
+    AM-->>GW: ProcessorAdapter instance
 
-    GW->>+PA: validateAndParseTransaction(data)
-    PA->>PA: Validate signature
-    PA->>PA: Parse clearing data
-    PA->>PA: Extract parent transaction ID
-    PA->>-GW: Result<ITransactionDetails>
+    GW->>PA: validateAndParseTransaction(data)
+    PA->>PA: Validate schema
+    PA->>PA: Parse to transaction details
+    PA-->>GW: Parsed transaction details
+    GW->> PA: authorizeTransaction(data)
+    PA->>PA: Validate signature and/or check api key and perform any logic
+    PA->> GW: transaction authorized
 
-    alt Validation Success
-        GW->>+TS: processTransaction(transactionDetails)
-        TS->>+Q: Add clearing job to queue
-        Q->>-TS: Job queued successfully
-        TS->>-GW: {success: true}
-        GW->>-PP: 202 Accepted
+    alt Validation success
+        GW->>TS: processTransaction(details)
+        TS->>Q: Add job to queue
+        Q-->>TS: Job queued
+        TS-->>GW: Success
+        GW-->>PP: 202 Accepted
 
-        Note over Q,Card: Async Clearing Processing
+        Note over Q,CS: Async Processing
 
-        Q->>+JP: Process clearing job
+        Q->>JP: Process job
         JP->>TS: processClearingTransaction(data)
         
-        TS->>+DB: Begin transaction
-        TS->>DB: Find pending transaction (SELECT FOR UPDATE)
-        
-        alt Transaction Found
-            TS->>DB: Update transaction with clearing data
-            TS->>DB: Create clearing event
-            TS->>-DB: Commit transaction
+        TS->>DB: Begin transaction
+        TS->>DB: findOne transaction (for update)
+        TS->>DB: update transaction
+        TS->>DB: Create transaction event
+        TS-->>DB: Commit transaction
 
-            TS->>+EH: Emit 'transaction.CLEARING' event
-            EH->>+Card: Update card utilization
-            
-            Card->>+DB: SELECT FOR UPDATE card
-            Card->>Card: Calculate new balances
-            Note right of Card: settled_balance += auth_amount<br/>pending_balance -= auth_amount
-            Card->>DB: Update card balances
-            Card->>-DB: Commit card update
+        TS->>EH: Emit transaction.CLEARING
+        EH->>CS: Calculate card utilization
+        EH->>AS: Log analytics
 
-            EH->>DB: Create CLEARING_EVENT_HANDLED event
-            EH->>DB: Create ANALYTICS_SENT event
-            EH->>-TS: Clearing processing complete
+        CS->>DB: SELECT FOR UPDATE card
+        CS->>DB: Update balances
+        CS-->>DB: Commit update
 
-        else Transaction Not Found
-            TS->>+DB: Rollback transaction
-            TS->>-DB: Transaction rollback
-            Note right of TS: Log error and handle gracefully
-        end
+        EH->>DB: Log event handled
+        EH->>DB: Log analytics sent
+        EH-->>TS: Done
 
-        TS->>JP: Clearing processed
-        JP->>-Q: Job completed
-
-    else Validation Failed
-        GW->>-PP: 400 Bad Request
+        TS-->>JP: Done
+        JP-->>Q: Job completed
+    else Validation failed
+        GW-->>PP: 400 Bad Request
+        Note over GW: Validation errors returned
     end
+
 ```
 
 ## Transaction Query Flow
@@ -384,47 +380,6 @@ sequenceDiagram
     CEH->>-EM: Clearing handling complete
 
     Note over TS,AS: All events are processed<br/>asynchronously and atomically
-```
-
-## System Health Check Flow
-
-```mermaid
-sequenceDiagram
-    participant LB as Load Balancer
-    participant GW as Gateway Service
-    participant TS as Transaction Service
-    participant DB as Database
-    participant Redis as Redis Queue
-
-    Note over LB,Redis: System Health Check Flow
-
-    LB->>+GW: GET /health
-    
-    par Gateway Health Check
-        GW->>GW: Check service status
-        GW->>+TS: Health check via gRPC
-        TS->>TS: Check service status
-        TS->>+DB: SELECT 1 (DB health)
-        DB->>-TS: DB responsive
-        TS->>+Redis: Ping (Queue health)
-        Redis->>-TS: Queue responsive
-        TS->>-GW: {status: 'healthy', services: {...}}
-    end
-    
-    GW->>GW: Aggregate health status
-    GW->>-LB: 200 OK {status: 'healthy'}
-
-    Note over LB: Load balancer routes traffic<br/>based on health status
-
-    alt Unhealthy Service
-        GW->>+TS: Health check via gRPC
-        TS->>+DB: SELECT 1
-        DB-->>-TS: Connection timeout
-        TS->>-GW: {status: 'unhealthy', error: 'DB_TIMEOUT'}
-        GW->>-LB: 503 Service Unavailable
-        
-        Note over LB: Load balancer removes<br/>unhealthy instance from pool
-    end
 ```
 
 ## Database Transaction Isolation Flow
