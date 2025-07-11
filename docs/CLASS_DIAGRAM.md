@@ -29,7 +29,7 @@ classDiagram
         +processAuthorizationTransaction(data: ITransactionDetails): Promise~void~
         +processClearingTransaction(data: ITransactionDetails): Promise~void~
         -createTransactionRecord(data: ITransactionDetails): Promise~Transaction~
-        -updateTransactionRecord(id: string, data: Partial~ITransactionDetails~): Promise~Transaction~
+        -updateTransactionRecord(id: string, data: object): Promise~Transaction~
     }
 
     class TransactionQueryService {
@@ -43,7 +43,7 @@ classDiagram
     class TransactionsGrpcService {
         -queue: Queue
         -transactionQueryService: TransactionQueryService
-        +processTransaction(data: ITransactionDetails): Promise~{success: boolean}~
+        +processTransaction(data: ITransactionDetails): Promise~object~
         +getTransactions(query: IGetTransactionsRequest): Promise~IGetTransactionResponse~
         -addToQueue(data: ITransactionDetails): Promise~Job~
     }
@@ -77,7 +77,7 @@ classDiagram
 
     %% Adapter Management
     class ProcessorAdapterManager {
-        -adapters: Map~string, IProcessorAdapter~
+        -adapters: Map
         +getAdapter(processorId: string): Promise~IProcessorAdapter~
         +registerAdapter(processorId: string, adapter: IProcessorAdapter): void
         +validateProcessorData(processorId: string, data: unknown): Promise~Result~
@@ -300,10 +300,10 @@ classDiagram
     class BaseProcessorAdapter {
         <<abstract>>
         #logger: Logger
-        #validateCommonFields(data: unknown): Result~boolean, string[]~
-        #parseCommonData(data: unknown): Partial~ITransactionDetails~
-        +validateAndParseTransaction(data: unknown): Promise~Result~*
-        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~*
+        #validateCommonFields(data: unknown): Result
+        #parseCommonData(data: unknown): Partial
+        +validateAndParseTransaction(data: unknown): Promise~Result~
+        +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
     }
 
     %% Processor One Adapter
@@ -313,7 +313,7 @@ classDiagram
         -moduleOptions: IProcessorOneModuleOptions
         +validateAndParseTransaction(data: unknown): Promise~Result~
         +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
-        -validateProcessorOneData(data: unknown): Result~ProcessorOneData, string[]~
+        -validateProcessorOneData(data: unknown): Result
         -parseAuthorizationTransaction(data: ProcessorOneData): ITransactionDetails
         -parseClearingTransaction(data: ProcessorOneData): ITransactionDetails
         -extractParentTransactionId(data: ProcessorOneData): string
@@ -328,7 +328,7 @@ classDiagram
         -moduleOptions: IProcessorTwoModuleOptions
         +validateAndParseTransaction(data: unknown): Promise~Result~
         +authorizeTransaction(data: unknown, headers: RequestHeaders): Promise~Result~
-        -validateProcessorTwoData(data: unknown): Result~ProcessorTwoData, string[]~
+        -validateProcessorTwoData(data: unknown): Result
         -parseTransactionEvent(data: ProcessorTwoData): ITransactionDetails
         -extractTransactionDetails(transaction: ProcessorTwoTransaction): ITransactionDetails
         -mapProcessorStatus(status: ProcessorTwoStatus): TransactionStatus
@@ -346,7 +346,7 @@ classDiagram
         +user_id: string
         +mcc: string
         +parent_transaction_id?: string
-        +[key: string]: unknown
+        +additionalFields: any
     }
 
     class ProcessorTwoData {
@@ -371,7 +371,7 @@ classDiagram
         +paymentology_tid: string
         +scheme_billing_amount: string
         +scheme_billing_currency: string
-        +[key: string]: unknown
+        +additionalFields: any
     }
 
     %% Schema Validation
@@ -470,7 +470,7 @@ classDiagram
         +processAuthorizationTransaction(data: ITransactionDetails): Promise~void~
         +processClearingTransaction(data: ITransactionDetails): Promise~void~
         -createTransaction(data: ITransactionDetails): Promise~Transaction~
-        -updateTransaction(transaction: Transaction, data: Partial~ITransactionDetails~): Promise~Transaction~
+        -updateTransaction(transaction: Transaction, data: object): Promise~Transaction~
         -createTransactionEvent(transactionId: string, eventType: TransactionEventType, data: unknown): Promise~void~
         -emitTransactionEvent(eventName: string, transaction: Transaction): void
     }
@@ -489,7 +489,7 @@ classDiagram
         -queue: Queue
         -transactionQueryService: TransactionQueryService
         -logger: Logger
-        +processTransaction(data: ITransactionDetails): Promise~{success: boolean}~
+        +processTransaction(data: ITransactionDetails): Promise~object~
         +getTransactions(query: IGetTransactionsRequest): Promise~IGetTransactionResponse~
         -addToProcessingQueue(data: ITransactionDetails): Promise~Job~
         -generateJobId(data: ITransactionDetails): string

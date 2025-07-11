@@ -39,7 +39,7 @@ sequenceDiagram
         Note over Q,Card: Async Processing
 
         Q->>+JP: Process job
-        JP->>+TS: processAuthorizationTransaction(data)
+        JP->>TS: processAuthorizationTransaction(data)
         
         TS->>+DB: Begin transaction
         TS->>DB: findOrCreate transaction
@@ -57,7 +57,7 @@ sequenceDiagram
         EH->>DB: Create CARDHOLDER_NOTIFIED event
         EH->>-TS: Event processing complete
 
-        TS->>-JP: Transaction processed
+        TS->>JP: Transaction processed
         JP->>-Q: Job completed
 
     else Validation Failed
@@ -105,7 +105,7 @@ sequenceDiagram
         Note over Q,Card: Async Clearing Processing
 
         Q->>+JP: Process clearing job
-        JP->>+TS: processClearingTransaction(data)
+        JP->>TS: processClearingTransaction(data)
         
         TS->>+DB: Begin transaction
         TS->>DB: Find pending transaction (SELECT FOR UPDATE)
@@ -129,11 +129,12 @@ sequenceDiagram
             EH->>-TS: Clearing processing complete
 
         else Transaction Not Found
-            TS->>DB: Rollback transaction
-            TS->>-EH: Log error and handle gracefully
+            TS->>+DB: Rollback transaction
+            TS->>-DB: Transaction rollback
+            Note right of TS: Log error and handle gracefully
         end
 
-        TS->>-JP: Clearing processed
+        TS->>JP: Clearing processed
         JP->>-Q: Job completed
 
     else Validation Failed
